@@ -12,5 +12,15 @@ add-apt-repository \
    $(lsb_release -cs) \
    stable"
 
+DOCKER_VERSION='5:19.03.15~3-0~debian-buster'
+CONTAINERD_VERSION='1.2.13-2'
+
 apt-get update && \
-apt-get install -y docker-ce docker-ce-cli containerd.io
+apt-get install -y docker-ce=${DOCKER_VERSION} docker-ce-cli=${DOCKER_VERSION} containerd.io=${CONTAINERD_VERSION}
+
+# Set up the Docker daemon
+cat <<EOF | tee /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"]
+}
+EOF
