@@ -19,6 +19,7 @@ apt-get update && \
 apt-get install -y docker-ce=${DOCKER_VERSION} docker-ce-cli=${DOCKER_VERSION} containerd.io=${CONTAINERD_VERSION}
 
 # Set up the Docker daemon
+mkdir -p /etc/docker/
 cat <<EOF | tee /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"]
