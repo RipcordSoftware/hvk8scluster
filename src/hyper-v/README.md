@@ -16,3 +16,12 @@ The preseed images are created by running the build script in Ubuntu (under WSL)
 > When you open Ubuntu you will need to change the working directory to the Windows directory where this repository is cloned.
 > The Windows file system is mapped into the Ubuntu file system under the path `/mnt/c/`, from there you can navigate to the
 > correct repository directory.
+
+## Hyper-V Switch
+The Kubernetes nodes require a dedicated [subnet](https://docs.microsoft.com/en-us/windows-server/virtualization/hyper-v/get-started/create-a-virtual-switch-for-hyper-v-virtual-machines) in Hyper-V. The script `install-k8s-nat.ps1` will create the switch and the network. The script should be run as an administrator.
+
+## DHCP/DNS VM
+The first VM that should be created is the DHCP/DNS VM, run the `install-dhcp-dns-vm.ps1` script as Administrator. This VM manages the control and node IP addresses of the cluster.
+
+## Cluster
+The `install-k8s-cluster.ps1` script creates the Kubernetes cluster. It requires both the switch and DHCP/DNS scripts to have run successfully.
