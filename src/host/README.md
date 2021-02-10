@@ -4,6 +4,7 @@ Scripts in this directory can be used to configure your Windows host computer to
 ## Requirements
 * Hyper-V capable of running virtual machines
 * WSL with Ubuntu
+* PowerShell enabled to run scripts from this repository, for example: `Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope CurrentUser`
 
 ## Scripts
 Run the following scripts under Powershell in Administrator mode:
