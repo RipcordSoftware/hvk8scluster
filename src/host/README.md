@@ -13,3 +13,6 @@ Run the following scripts under Powershell in Administrator mode:
 
 The following script should be run in an Ubuntu console session after it is installed:
 * `install-ubuntu-tools.sh`
+
+> You may have installed git with `autocrlf` enabled, in this case scripts on Ubuntu may fail since they have been modified.
+> Change your setting with `git config core.autocrlf input` to prevent this problem. You will need to re-clone the repository.
