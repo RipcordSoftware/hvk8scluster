@@ -50,11 +50,11 @@ function Initialize-ClusterMaster([string] $ip) {
         'sudo chown $(id -u):$(id -g) $HOME/.kube/config'
     Invoke-RemoteCommand -ip $ip -command $command    
 
-    # $command =
-    #     'wget https://docs.projectcalico.org/v3.17/manifests/calico.yaml -O calico.yaml && ' +
-    #     "sed -i 's/192.168.0.0/172.30.0.0/' calico.yaml && " +
-    #     'kubectl apply -f calico.yaml'
-    # Invoke-RemoteCommand -ip $ip -command $command
+    $command =
+        'wget https://docs.projectcalico.org/v3.17/manifests/calico.yaml -O calico.yaml && ' +
+        "sed -i 's/192.168.0.0/172.30.0.0/' calico.yaml && " +
+        'kubectl apply -f calico.yaml'
+    Invoke-RemoteCommand -ip $ip -command $command
 }
 
 function Get-ClusterJoinCommand([string] $ip) {
