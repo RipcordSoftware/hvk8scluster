@@ -1,7 +1,11 @@
 param (
+    [int] $nodeCount = 2,
+    [int] $nodeMemoryMB = 6144,
+    [int] $masterMemoryMB = 4096,
     [string] $privateKeyPath,
     [switch] $removeVhd,
     [switch] $removeVm,
+    [switch] $updateVm,
     [switch] $skipVmProvisioning,
     [switch] $ignoreKeyPermissions
 )
@@ -15,11 +19,17 @@ if (!$privateKeyPath) {
     $privateKeyPath = @("${repoRoot}/src/keys/id_rsa", "~/.ssh/id_rsa") | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 
-[object] $cluster = @( 
-    @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = "172.31.0.10"; node = $false; minMemoryMB = 256; maxMemoryMB = 4096 }
-    @{ vmName = "k8s-node1"; hostname = "k8s-node1"; ip = "172.31.0.11"; node = $true; minMemoryMB = 256; maxMemoryMB = 6144 }
-    @{ vmName = "k8s-node2"; hostname = "k8s-node2"; ip = "172.31.0.12"; node = $true; minMemoryMB = 256; maxMemoryMB = 6144 }
-)
+# define the cluster
+[object] $master = @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = "172.31.0.10"; node = $false; minMemoryMB = 256; maxMemoryMB = $masterMemoryMB }
+[object] $cluster = @( $master )
+
+if ($nodeCount -gt 0) {
+    $cluster += @(1 .. $nodeCount) | ForEach-Object {
+        [int] $nodeId = $_
+        [int] $hostIp = 10 + $nodeId
+        @{ vmName = "k8s-node${nodeId}"; hostname = "k8s-node${nodeId}"; ip = "172.31.0.${hostIp}"; node = $true; minMemoryMB = 256; maxMemoryMB = $nodeMemoryMB }
+    }
+}
 
 function Get-VmIpV4Address([string[]] $addresses) {
     $addresses | Where-Object { $_.Contains(".") }
@@ -33,24 +43,26 @@ function Invoke-RemoteCommand([string] $ip, [string] $command) {
 }
 
 function Set-VmHostName([string] $ip, [string] $hostName) {
-    [string] $command = 
-        'if [ "$(hostname)" != ' + "'$hostName' ]; then " + 
-        "sudo sed -i 's/k8s-unknown/$hostName/g' /etc/hosts && " +
-        "sudo sed -i 's/k8s-unknown/$hostName/g' /etc/hostname && " +
-        "sudo rm -f /var/lib/dhcp/*.leases && " +
-        "sudo systemctl reboot --no-block; fi"
+    [string] $command =
+        'if [ "$(hostname)" != ' + "'${hostName}' ]; then " +
+        " sudo sed -i 's/k8s-unknown/${hostName}/g' /etc/hosts && " +
+        " sudo sed -i 's/k8s-unknown/${hostName}/g' /etc/hostname && " +
+        " sudo rm -f /var/lib/dhcp/*.leases && " +
+        " sudo systemctl reboot --no-block; " +
+        "fi"
 
     Invoke-RemoteCommand -ip $ip -command $command
 }
 
 function Initialize-ClusterMaster([string] $ip) {
     [string] $command =
-        'test ! -d .kube && ' +
-        'sudo kubeadm init --pod-network-cidr=172.30.0.0/16 && ' +
-        'mkdir -p $HOME/.kube && ' +
-        'sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && ' +
-        'sudo chown $(id -u):$(id -g) $HOME/.kube/config'
-    Invoke-RemoteCommand -ip $ip -command $command    
+        'if [ ! -d .kube ]; then ' +
+        ' sudo kubeadm init --pod-network-cidr=172.30.0.0/16 && ' +
+        ' mkdir -p $HOME/.kube && ' +
+        ' sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && ' +
+        ' sudo chown $(id -u):$(id -g) $HOME/.kube/config; ' +
+        'fi'
+    Invoke-RemoteCommand -ip $ip -command $command
 
     $command =
         'wget https://docs.projectcalico.org/v3.17/manifests/calico.yaml -O calico.yaml && ' +
@@ -65,7 +77,7 @@ function Get-ClusterJoinCommand([string] $ip) {
 }
 
 # check the read/write permissions on the private key file
-[object] $keyAccess = (Get-Acl -Path $privateKeyPath).Access | 
+[object] $keyAccess = (Get-Acl -Path $privateKeyPath).Access |
     Where-Object { ! (@("NT AUTHORITY\SYSTEM", "BUILTIN\Administrators") -contains $_.IdentityReference) } |
     Where-Object { $_.IdentityReference -notmatch "\\${env:USERNAME}`$" }
 if (!$ignoreKeyPermissions -and $keyAccess) {
@@ -83,7 +95,7 @@ Invoke-RemoteCommand -ip "172.31.0.2" -command 'sudo systemctl stop dnsmasq && s
 
 # provision the VMs on Hyper-V
 if (!$skipVmProvisioning) {
-    $cluster | ForEach-Object { .\install-k8s-vm.ps1 -vmName $_.vmName -removeVhd:$removeVhd -removeVm:$removeVm -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB }
+    $cluster | ForEach-Object { .\install-k8s-vm.ps1 -vmName $_.vmName -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB }
 
     # configure the VM networking
     $cluster | ForEach-Object {
@@ -93,11 +105,11 @@ if (!$skipVmProvisioning) {
         Write-Host "Waiting for VM IP address for '${vmName}'"
         while (!$ip) {
             [object] $adapter = Get-VMNetworkAdapter -VMName $vmName
-            
+
             while ($adapter.IPAddresses.Count -lt 1) {
                 Start-Sleep -Seconds 10
                 Write-Host -NoNewline "."
-            }            
+            }
 
             $ip = Get-VmIpV4Address $adapter.IPAddresses
             if ($ip -and (Test-NetConnection -ComputerName $ip -Port 22).TcpTestSucceeded) {
@@ -137,5 +149,5 @@ $cluster | Where-Object { $_.node } | ForEach-Object {
     Write-Host
 
     Write-Host "Node '$($_.hostname)' is requesting to join the cluster..."
-    Invoke-RemoteCommand -ip $_.ip -command "test ! -f /etc/kubernetes/kubelet.conf && sudo ${joinCommand}"
+    Invoke-RemoteCommand -ip $_.ip -command "if [ ! -f /etc/kubernetes/kubelet.conf ]; then sudo ${joinCommand}; fi"
 }

@@ -7,6 +7,7 @@ param (
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
+    [switch] $updateVm,
     [string] $debianVersion = "10.7.0"
 )
 
@@ -21,5 +22,4 @@ if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
 }
 
-[Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm)
-
+[Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
