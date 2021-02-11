@@ -1,10 +1,9 @@
 param (
     [string] $vmName = "k8s-dhcp-dns",
     [int] $vmCpuCount = 2,
-    [int64] $vmMinMemory = 256 * 1024 * 1024,
-    [int64] $vmMaxMemory = 768 * 1024 * 1024,
-    [string] $vmDiskName = "${vmName}.vhdx",
-    [int64] $vmDiskSize = 4 * 1024 * 1024 * 1024,
+    [int64] $vmMinMemoryMB = 256,
+    [int64] $vmMaxMemoryMB = 768,
+    [int64] $vmDiskSizeGB = 4,
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
@@ -13,41 +12,14 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-[object] $vm = Get-VM -Name $vmName -ErrorAction SilentlyContinue
-if ($vm) {
-    if (!$removeVm) {
-        Write-Error "The VM '$vmName' already exists"
-    }
+. ./scripts/vm.ps1
+. ./scripts/git.ps1
 
-    Remove-VM -Name $vmName -Force
+[string] $repoRoot = [Git]::RepoRoot
+[string] $isoPath = "${repoRoot}/bin/preseed-dhcp-dns-debian-${debianVersion}-amd64-netinst.iso"
+if (!(Test-Path $isoPath)) {
+    Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
 }
 
-[string] $repoRoot=git rev-parse --show-toplevel
+[Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm)
 
-[string] $debianIsoPath = "${repoRoot}/bin/preseed-dhcp-dns-debian-${debianVersion}-amd64-netinst.iso"
-if (!(Test-Path $debianIsoPath)) {
-    Write-Error "The ISO image '$debianIsoPath' is missing, please build it before proceeding"
-}
-
-[string] $commonVhdPath = "$($env:PUBLIC)\Documents\Hyper-V\Virtual Hard Disks"
-[string] $vmDiskPath = "${commonVhdPath}\${vmDiskName}"
-if ($removeVhd -and (Test-Path $vmDiskPath)) {
-    Remove-Item $vmDiskPath
-}
-
-New-VM -Name $vmName -SwitchName $vmSwitch -NewVHDPath $vmDiskName -NewVHDSizeBytes $vmDiskSize -Generation 2
-
-try {
-    Set-VM -Name $vmName -ProcessorCount $vmCpuCount -DynamicMemory -MemoryMinimumBytes $vmMinMemory -MemoryStartupBytes $vmMaxMemory -MemoryMaximumBytes $vmMaxMemory -AutomaticStartAction Start -AutomaticStartDelay 30
-
-    [object] $scsi = Get-VMScsiController -VMName $vmName
-
-    [object] $dvdDrive = Add-VMDvdDrive -VMDriveController $scsi -Path $debianIsoPath -Passthru
-
-    Set-VMFirmware -VMName $vmName -EnableSecureBoot Off -FirstBootDevice $dvdDrive    
-
-    Start-VM -Name $vmName
-} catch {
-    Write-Error $_
-    Remove-VM -Name $vmName -Force
-}

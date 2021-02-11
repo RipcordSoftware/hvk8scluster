@@ -8,15 +8,17 @@ param (
 
 $ErrorActionPreference = "Stop"
 
+. ./scripts/git.ps1
+
 if (!$privateKeyPath) {
-    [string] $repoRoot=git rev-parse --show-toplevel
+    [string] $repoRoot = [Git]::RepoRoot
     $privateKeyPath = @("${repoRoot}/src/keys/id_rsa", "~/.ssh/id_rsa") | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 
 [object] $cluster = @( 
-    @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = "172.31.0.10"; node = $false; minMemory = 256 * 1024 * 1024; maxMemory = 4 * 1024 * 1024 * 1024 }
-    @{ vmName = "k8s-node1"; hostname = "k8s-node1"; ip = "172.31.0.11"; node = $true; minMemory = 256 * 1024 * 1024; maxMemory = 6 * 1024 * 1024 * 1024 }
-    @{ vmName = "k8s-node2"; hostname = "k8s-node2"; ip = "172.31.0.12"; node = $true; minMemory = 256 * 1024 * 1024; maxMemory = 6 * 1024 * 1024 * 1024 }
+    @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = "172.31.0.10"; node = $false; minMemoryMB = 256; maxMemoryMB = 4096 }
+    @{ vmName = "k8s-node1"; hostname = "k8s-node1"; ip = "172.31.0.11"; node = $true; minMemoryMB = 256; maxMemoryMB = 6144 }
+    @{ vmName = "k8s-node2"; hostname = "k8s-node2"; ip = "172.31.0.12"; node = $true; minMemoryMB = 256; maxMemoryMB = 6144 }
 )
 
 function Get-VmIpV4Address([string[]] $addresses) {
@@ -81,7 +83,7 @@ Invoke-RemoteCommand -ip "172.31.0.2" -command 'sudo systemctl stop dnsmasq && s
 
 # provision the VMs on Hyper-V
 if (!$skipVmProvisioning) {
-    $cluster | ForEach-Object { .\install-k8s-vm.ps1 -vmName $_.vmName -removeVhd:$removeVhd -removeVm:$removeVm -vmMinMemory $_.minMemory -vmMaxMemory $_.maxMemory }
+    $cluster | ForEach-Object { .\install-k8s-vm.ps1 -vmName $_.vmName -removeVhd:$removeVhd -removeVm:$removeVm -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB }
 
     # configure the VM networking
     $cluster | ForEach-Object {
