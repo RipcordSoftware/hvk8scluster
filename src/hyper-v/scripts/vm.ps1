@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 . "${PSScriptRoot}/k8s.ps1"
 
 class Vm {
-    static [void] Create(
+    static [bool] Create(
         [string] $vmName,
         [string] $isoPath,
         [int] $vmCpuCount = 2,
@@ -80,5 +80,7 @@ class Vm {
                 Remove-VM -Name $vmName -Force
             }
         }
+
+        return $createdVm
     }
 }

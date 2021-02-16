@@ -1,5 +1,6 @@
 param (
     [string] $vmName = "k8s-unknown",
+    [string] $vmIp,
     [int] $vmCpuCount = 2,
     [int] $vmMinMemoryMB = 1024,
     [int] $vmMaxMemoryMB = 2048,
@@ -15,6 +16,7 @@ $ErrorActionPreference = "Stop"
 
 . ./scripts/vm.ps1
 . ./scripts/git.ps1
+. ./scripts/ssh.ps1
 
 [string] $repoRoot = [Git]::RepoRoot
 [string] $isoPath = "${repoRoot}/bin/preseed-k8s-debian-${debianVersion}-amd64-netinst.iso"
@@ -22,4 +24,9 @@ if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
 }
 
-[Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
+[bool] $created = [Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
+
+# if we created a new VM then remove any old host keys
+if ($created -and $vmIp) {
+    [Ssh]::RemoveHostKeys($vmIp)
+}
