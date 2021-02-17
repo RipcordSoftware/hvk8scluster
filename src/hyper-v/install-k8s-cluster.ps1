@@ -2,6 +2,7 @@ param (
     [int] $nodeCount = 2,
     [int] $nodeMemoryMB = 6144,
     [int] $masterMemoryMB = 4096,
+    [string] $vmTemplateName,
     [string] $sshUser = "hvk8s",
     [string] $sshPrivateKeyPath,
     [switch] $removeVhd,
@@ -15,6 +16,8 @@ $ErrorActionPreference = "Stop"
 
 . ./scripts/git.ps1
 . ./scripts/ssh.ps1
+. ./scripts/vm.ps1
+. ./scripts/cluster.ps1
 
 if (!$sshPrivateKeyPath) {
     [string] $repoRoot = [Git]::RepoRoot
@@ -33,46 +36,6 @@ if ($nodeCount -gt 0) {
     }
 }
 
-function Get-VmIpV4Address([string[]] $addresses) {
-    $addresses | Where-Object { $_.Contains(".") }
-}
-
-function Set-VmHostName([string] $ip, [string] $hostName) {
-    [string] $command =
-        'if [ "$(hostname)" != ' + "'${hostName}' ]; then " +
-        " sudo sed -i 's/k8s-unknown/${hostName}/g' /etc/hosts && " +
-        " sudo sed -i 's/k8s-unknown/${hostName}/g' /etc/hostname && " +
-        " sudo rm -f /var/lib/dhcp/*.leases && " +
-        " sudo systemctl reboot --no-block; " +
-        "fi"
-
-    [Ssh]::InvokeRemoteCommand($ip, $command, $sshUser, $sshPrivateKeyPath) | Out-Null
-}
-
-function Initialize-ClusterMaster([string] $ip) {
-    [string] $command =
-        'if [ ! -d .kube ]; then ' +
-        ' sudo kubeadm init --pod-network-cidr=172.30.0.0/16 && ' +
-        ' mkdir -p $HOME/.kube && ' +
-        ' sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && ' +
-        ' sudo chown $(id -u):$(id -g) $HOME/.kube/config; ' +
-        'fi'
-    [Ssh]::InvokeRemoteCommand($ip, $command, $sshUser, $sshPrivateKeyPath) | Out-Null
-
-    $command =
-        'wget https://docs.projectcalico.org/v3.17/manifests/calico.yaml -O calico.yaml && ' +
-        "sed -i 's/192.168.0.0/172.30.0.0/' calico.yaml && " +
-        'kubectl apply -f calico.yaml'
-    [Ssh]::InvokeRemoteCommand($ip, $command, $sshUser, $sshPrivateKeyPath) | Out-Null
-}
-
-function Get-ClusterJoinCommand([string] $ip) {
-    [string] $command = "kubeadm token create --print-join-command"
-    [string] $joinCmd = [Ssh]::InvokeRemoteCommand($ip, $command, $sshUser, $sshPrivateKeyPath)
-    $joinCmd = $joinCmd -replace '\s*$', ""
-    return $joinCmd
-}
-
 # check the read/write permissions on the private key file
 [object] $keyAccess = (Get-Acl -Path $sshPrivateKeyPath).Access |
     Where-Object { ! (@("NT AUTHORITY\SYSTEM", "BUILTIN\Administrators") -contains $_.IdentityReference) } |
@@ -82,8 +45,8 @@ if (!$ignoreKeyPermissions -and $keyAccess) {
 }
 
 # check the DHCP server is available
-[object] $dhcpServer = Get-VM -Name "k8s-dhcp-dns" -ErrorAction SilentlyContinue
-if (!$dhcpServer -or !(Test-NetConnection -ComputerName "172.31.0.2" -Port 22).TcpTestSucceeded) {
+[object] $dhcpServer = [Vm]::GetVM("k8s-dhcp-dns")
+if (!$dhcpServer -or ![Ssh]::TestSsh("172.31.0.2")) {
     Write-Error "Unable to find the DHCP/DNS server, is it running?"
 }
 
@@ -93,7 +56,18 @@ if (!$dhcpServer -or !(Test-NetConnection -ComputerName "172.31.0.2" -Port 22).T
 # provision the VMs on Hyper-V
 if (!$skipVmProvisioning) {
     $cluster | ForEach-Object {
-        .\install-k8s-vm.ps1 -vmName $_.vmName -vmIp $_.ip -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB
+        [string] $vmName = $_.vmName
+        if ($vmTemplateName) {
+            Write-Host "Cloning '${vmTemplateName}' to '${vmName}'..."
+            .\clone-k8s-vm.ps1 `
+                -vmTemplateName $vmTemplateName -vmName $vmName -vmIp $_.ip -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB `
+                -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
+        } else {
+            Write-Host "Creating '${vmName}'..."
+            .\install-k8s-vm.ps1 `
+                -vmName $vmName -vmIp $_.ip -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB `
+                -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
+        }
     }
 
     # configure the VM networking
@@ -101,20 +75,16 @@ if (!$skipVmProvisioning) {
         [string] $vmName = $_.vmName
         [string] $ip = $null
 
-        Write-Host "Waiting for VM IP address for '${vmName}'"
+        Write-Host "Waiting for VM IP address for '${vmName}'..."
         while (!$ip) {
-            [object] $adapter = Get-VMNetworkAdapter -VMName $vmName
+            $ip = [Vm]::WaitForIpv4($vmName, $true)
 
-            while ($adapter.IPAddresses.Count -lt 1) {
-                Start-Sleep -Seconds 10
-                Write-Host -NoNewline "."
-            }
+            if ($ip) {
+                Write-Host "Waiting for active SSH on '${ip}'..."
+                [Ssh]::WaitForSsh($ip, $true)
 
-            $ip = Get-VmIpV4Address $adapter.IPAddresses
-            if ($ip -and (Test-NetConnection -ComputerName $ip -Port 22).TcpTestSucceeded) {
-                Write-Host
                 Write-Host "Discovered '${vmName}' on '${ip}'"
-                Set-VmHostName -ip $ip -hostName $_.hostname
+                [Cluster]::SetHostName($ip, $_.hostname, $sshUser, $sshPrivateKeyPath)
             }
         }
     }
@@ -122,31 +92,24 @@ if (!$skipVmProvisioning) {
 
 # initialize the master
 $cluster | Where-Object { !$_.node } | ForEach-Object {
-    Write-Host "Waiting for active SSH on '$($_.ip)'"
-    while (!(Test-NetConnection -ComputerName $_.ip -Port 22).TcpTestSucceeded) {
-        Start-Sleep -Seconds 10
-        Write-Host -NoNewline "."
-    }
-    Write-Host
+    Write-Host "Waiting for active SSH on '$($_.ip)'..."
+    [Ssh]::WaitForSsh($_.ip, $true)
 
     Write-Host "Initializing cluster master '$($_.hostname)'..."
-    Initialize-ClusterMaster -ip $_.ip
+    [Cluster]::InitializeMaster($_.ip, $sshUser, $sshPrivateKeyPath)
+    [Cluster]::InitializeCalico($_.ip, $sshUser, $sshPrivateKeyPath)
 }
 
 # get the cluster join command
-[string] $masterIp = $cluster | Where-Object { !$_.node } | ForEach-Object { $_.ip }
-[string] $joinCommand = Get-ClusterJoinCommand -ip $masterIp
+[string] $masterIp = $cluster | Where-Object { !$_.node } | ForEach-Object { $_.ip } | Select-Object -First 1
+[string] $joinCommand = [Cluster]::GetJoinCommand($masterIp, $sshUser, $sshPrivateKeyPath)
 Write-Host "Got join command: $joinCommand"
 
 # initialize the nodes
 $cluster | Where-Object { $_.node } | ForEach-Object {
-    Write-Host "Waiting for active SSH on '$($_.ip)'"
-    while (!(Test-NetConnection -ComputerName $_.ip -Port 22).TcpTestSucceeded) {
-        Start-Sleep -Seconds 10
-        Write-Host -NoNewline "."
-    }
-    Write-Host
+    Write-Host "Waiting for active SSH on '$($_.ip)'..."
+    [Ssh]::WaitForSsh($_.ip, $true)
 
     Write-Host "Node '$($_.hostname)' is requesting to join the cluster..."
-    [Ssh]::InvokeRemoteCommand($_.ip, "if [ ! -f /etc/kubernetes/kubelet.conf ]; then sudo ${joinCommand}; fi", $sshUser, $sshPrivateKeyPath) | Out-Null
+    [Cluster]::Join($_.ip, $joinCommand, $sshUser, $sshPrivateKeyPath)
 }

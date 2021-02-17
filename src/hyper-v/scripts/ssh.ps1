@@ -37,4 +37,24 @@ class Ssh {
 
         return $output
     }
+
+    static [bool] TestSsh([string] $ip) {
+        return (Test-NetConnection -ComputerName $ip -Port 22 -WarningAction SilentlyContinue).TcpTestSucceeded
+    }
+
+    static [void] WaitForSsh([string] $ip, [bool] $echoConsole) {
+        [int] $echoTicks = 0
+        while (![Ssh]::TestSsh($ip)) {
+            Start-Sleep -Seconds 10
+            if ($echoConsole) {
+                Write-Host -NoNewline "."
+                $echoTicks++
+            }
+        }
+        if ($echoTicks -gt 0) {
+            Write-Host
+        }
+    }
 }
+
+[type] $script:Ssh = &{ return [Ssh] }
