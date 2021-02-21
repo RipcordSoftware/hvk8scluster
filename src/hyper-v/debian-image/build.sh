@@ -12,7 +12,8 @@ PRESEED_NAME=${1%.cfg}
 PRESEED_FILE="${PRESEED_NAME}.cfg"
 REPO_ROOT=$(git rev-parse --show-toplevel)
 PUBKEY_FILE="${REPO_ROOT}/src/keys/id_rsa.pub"
-ISOFILES_ROOT="${ISOFILES_ROOT:-/tmp/isofiles}"
+ISOFILES_TMP_ROOT="${ISOFILES_TMP_ROOT:-/tmp/isofiles}"
+ISOFILES_OUT_ROOT="${REPO_ROOT}/bin/isos"
 
 if [ "$REPO_ROOT" == "" ]; then
     echo "Error: unable to determine the repository root"
@@ -33,49 +34,49 @@ if [ $? -ne 0 ]; then
     exit 3
 fi
 
-if [ -d "$ISOFILES_ROOT" ]; then
-  chmod -R 700 "$ISOFILES_ROOT"
-  rm -rf "$ISOFILES_ROOT"
+if [ -d "$ISOFILES_TMP_ROOT" ]; then
+  chmod -R 700 "$ISOFILES_TMP_ROOT"
+  rm -rf "$ISOFILES_TMP_ROOT"
 fi
 
-xorriso -osirrox on -indev "$REPO_ROOT/src/iso/debian-$DEBIAN_VERSION-amd64-netinst.iso" -extract / "$ISOFILES_ROOT"
+xorriso -osirrox on -indev "${REPO_ROOT}/src/iso/debian-${DEBIAN_VERSION}-amd64-netinst.iso" -extract / "$ISOFILES_TMP_ROOT"
 if [ $? -ne 0 ]; then
     echo "Error: unable to extract the source ISO"
     exit 4
 fi
 
-chmod -R 700 "$ISOFILES_ROOT" && \
-cp -Rf ./preseed/ "${ISOFILES_ROOT}/preseed" && \
-cp -f "$PUBKEY_FILE" "${ISOFILES_ROOT}/preseed"
+chmod -R 700 "$ISOFILES_TMP_ROOT" && \
+cp -Rf ./preseed/ "${ISOFILES_TMP_ROOT}/preseed" && \
+cp -f "$PUBKEY_FILE" "${ISOFILES_TMP_ROOT}/preseed"
 if [ $? -ne 0 ]; then
     echo "Error: unable to inject the preseed script directory"
     exit 5
 fi
 
-gunzip "${ISOFILES_ROOT}/install.amd/initrd.gz" && \
-echo "preseed.cfg" | cpio -H newc -o -A -F "${ISOFILES_ROOT}/install.amd/initrd" && \
-gzip "${ISOFILES_ROOT}/install.amd/initrd"
+gunzip "${ISOFILES_TMP_ROOT}/install.amd/initrd.gz" && \
+echo "preseed.cfg" | cpio -H newc -o -A -F "${ISOFILES_TMP_ROOT}/install.amd/initrd" && \
+gzip "${ISOFILES_TMP_ROOT}/install.amd/initrd"
 if [ $? -ne 0 ]; then
     echo "Error: unable to inject the preseed file"
     exit 6
 fi
 
-sed -i 's/timeout 0/timeout 5/' "${ISOFILES_ROOT}/isolinux/isolinux.cfg" && \
-echo -e "\tmenu default" >> "${ISOFILES_ROOT}/isolinux/txt.cfg"
+sed -i 's/timeout 0/timeout 5/' "${ISOFILES_TMP_ROOT}/isolinux/isolinux.cfg" && \
+echo -e "\tmenu default" >> "${ISOFILES_TMP_ROOT}/isolinux/txt.cfg"
 if [ $? -ne 0 ]; then
     echo "Error: Unable to set the default menu item or timeout"
     exit 7
 fi
 
-sed -i $'s/ \'Install\' {/ \'Install\' --id install {/' "${ISOFILES_ROOT}/boot/grub/grub.cfg" && \
-echo 'default=install' >> "${ISOFILES_ROOT}/boot/grub/grub.cfg" && \
-echo 'timeout=5' >> "${ISOFILES_ROOT}/boot/grub/grub.cfg"
+sed -i $'s/ \'Install\' {/ \'Install\' --id install {/' "${ISOFILES_TMP_ROOT}/boot/grub/grub.cfg" && \
+echo 'default=install' >> "${ISOFILES_TMP_ROOT}/boot/grub/grub.cfg" && \
+echo 'timeout=5' >> "${ISOFILES_TMP_ROOT}/boot/grub/grub.cfg"
 if [ $? -ne 0 ]; then
     echo "Error: unable to update the grub.cfg with default boot options"
     exit 10
 fi
 
-pushd "${ISOFILES_ROOT}"
+pushd "${ISOFILES_TMP_ROOT}"
 md5sum $(find -follow -type f) > md5sum.txt; MD5_RESULT=$?
 popd
 if [ $MD5_RESULT -ne 0 ]; then
@@ -83,8 +84,10 @@ if [ $MD5_RESULT -ne 0 ]; then
     exit 8
 fi
 
+mkdir -p "$ISOFILES_OUT_ROOT"
+
 xorriso -as mkisofs \
-    -isohybrid-mbr "${ISOFILES_ROOT}/g2ldr.mbr" \
+    -isohybrid-mbr "${ISOFILES_TMP_ROOT}/g2ldr.mbr" \
     -c isolinux/boot.cat \
     -b isolinux/isolinux.bin \
     -no-emul-boot \
@@ -94,8 +97,8 @@ xorriso -as mkisofs \
     -e boot/grub/efi.img \
     -no-emul-boot \
     -isohybrid-gpt-basdat \
-    -o "$REPO_ROOT/bin/$PRESEED_NAME-debian-$DEBIAN_VERSION-amd64-netinst.iso" \
-    "$ISOFILES_ROOT"
+    -o "${ISOFILES_OUT_ROOT}/${PRESEED_NAME}-debian-${DEBIAN_VERSION}-amd64-netinst.iso" \
+    "$ISOFILES_TMP_ROOT"
 if [ $? -ne 0 ]; then
     echo "Error: unable to create the preseed iso file"
     exit 9
