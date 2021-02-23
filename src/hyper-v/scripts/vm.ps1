@@ -41,7 +41,7 @@ class Vm {
         if (!$vm) {
             [Vm]::RemoveVhd($vmName)
 
-            [string] $diskPath = [Vm]::GetVhdPath($vmName, $true)
+            [string] $diskPath = [Vm]::GetVhdPath($vmName)
             $vm = New-VM -Name $vmName -SwitchName $vmSwitch -NewVHDPath $diskPath -NewVHDSizeBytes $vmDiskSize -Generation 2
             $createdVm = $true
         }
@@ -89,9 +89,9 @@ class Vm {
     }
 
     static [void] RemoveVhd([string] $vmName) {
-        [string] $diskPath = [Vm]::GetVhdPath($vmName, $false)
-        if (Test-Path $diskPath) {
-            Remove-Item $diskPath -Recurse -Force
+        [string] $diskDir = [Vm]::GetVhdDirectory($vmName)
+        if (Test-Path $diskDir) {
+            Remove-Item $diskDir -Recurse -Force
         }
     }
 
@@ -99,12 +99,16 @@ class Vm {
         Remove-VM -Name $vmName -Force
     }
 
-    static [string] GetVhdPath([string] $vmName, [bool] $includeFileName) {
-        [string] $path = "$([Vm]::VhdPath)/${vmName}"
-        if ($includeFileName) {
-            $path += "/${vmName}.vhdx"
-        }
-        return $path
+    static [string] GetVhdDirectory([string] $vmName) {
+        return "$([Vm]::VhdPath)/${vmName}"
+    }
+
+    static [string] GetVhdPath([string] $vmName) {
+        return [Vm]::GetVhdPath($vmName, $vmName)
+    }
+
+    static [string] GetVhdPath([string] $vmName, [string] $diskName) {
+        return "$([Vm]::VhdPath)/${vmName}/${diskName}.vhdx"
     }
 
     static [string] WaitForIpv4([string] $vmName, [bool] $echoConsole) {

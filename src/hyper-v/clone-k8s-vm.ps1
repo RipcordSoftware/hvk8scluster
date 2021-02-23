@@ -37,8 +37,8 @@ if (!$vm) {
     [Vm]::RemoveVhd($vmName)
 
     # import the VM
-    [string] $diskPath = [Vm]::GetVhdPath($vmName, $false)
-    $vm = Import-Vm -Path $sourceVmcxPath -VhdDestinationPath $diskPath -Copy -GenerateNewId
+    [string] $diskDir = [Vm]::GetVhdDirectory($vmName)
+    $vm = Import-Vm -Path $sourceVmcxPath -VhdDestinationPath $diskDir -Copy -GenerateNewId
 
     # rename the VM
     Get-VM -id $vm.Id | Rename-VM -NewName $vmName
