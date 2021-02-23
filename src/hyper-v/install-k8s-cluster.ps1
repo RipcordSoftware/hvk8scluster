@@ -37,10 +37,7 @@ if ($nodeCount -gt 0) {
 }
 
 # check the read/write permissions on the private key file
-[object] $keyAccess = (Get-Acl -Path $sshPrivateKeyPath).Access |
-    Where-Object { ! (@("NT AUTHORITY\SYSTEM", "BUILTIN\Administrators") -contains $_.IdentityReference) } |
-    Where-Object { $_.IdentityReference -notmatch "\\${env:USERNAME}`$" }
-if (!$ignoreKeyPermissions -and $keyAccess) {
+if (!$ignoreKeyPermissions -and ![Ssh]::CheckKeyFilePermissions($sshPrivateKeyPath)) {
     Write-Error "The permissions on the private key file '$sshPrivateKeyPath' are too open, OpenSSH requires these are limited to the current user only. Alternately specify -ignoreKeyPermissions on the command line."
 }
 

@@ -55,6 +55,13 @@ class Ssh {
             Write-Host
         }
     }
+
+    static [bool] CheckKeyFilePermissions([string] $keyPath) {
+        [object] $keyAccess = (Get-Acl -Path $keyPath).Access |
+            Where-Object { ! (@("NT AUTHORITY\SYSTEM", "BUILTIN\Administrators") -contains $_.IdentityReference) } |
+            Where-Object { $_.IdentityReference -notmatch "\\${env:USERNAME}`$" }
+        return !$keyAccess
+    }
 }
 
 [type] $script:Ssh = &{ return [Ssh] }
