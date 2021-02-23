@@ -14,25 +14,25 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. ./scripts/git.ps1
+. ./scripts/config.ps1
 . ./scripts/ssh.ps1
 . ./scripts/vm.ps1
 . ./scripts/cluster.ps1
 
 if (!$sshPrivateKeyPath) {
-    [string] $repoRoot = [Git]::RepoRoot
+    [string] $repoRoot = [Config]::RepoRoot
     $sshPrivateKeyPath = @("${repoRoot}/src/keys/id_rsa", "~/.ssh/id_rsa") | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 
 # define the cluster
-[object] $master = @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = "172.31.0.10"; node = $false; minMemoryMB = 256; maxMemoryMB = $masterMemoryMB }
+[object] $master = @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = [Config]::Vm.Master.Ip; node = $false; minMemoryMB = 256; maxMemoryMB = $masterMemoryMB }
 [object] $cluster = @( $master )
 
 if ($nodeCount -gt 0) {
     $cluster += @(1 .. $nodeCount) | ForEach-Object {
         [int] $nodeId = $_
-        [int] $hostIp = 10 + $nodeId
-        @{ vmName = "k8s-node${nodeId}"; hostname = "k8s-node${nodeId}"; ip = "172.31.0.${hostIp}"; node = $true; minMemoryMB = 256; maxMemoryMB = $nodeMemoryMB }
+        [int] $hostIp = [Config]::Vm.Master.Ip -replace '[0-9]$',"${nodeId}"
+        @{ vmName = "k8s-node${nodeId}"; hostname = "k8s-node${nodeId}"; ip = ${hostIp}; node = $true; minMemoryMB = 256; maxMemoryMB = $nodeMemoryMB }
     }
 }
 
@@ -42,13 +42,13 @@ if (!$ignoreKeyPermissions -and ![Ssh]::CheckKeyFilePermissions($sshPrivateKeyPa
 }
 
 # check the DHCP server is available
-[object] $dhcpServer = [Vm]::GetVM("k8s-dhcp-dns")
-if (!$dhcpServer -or ![Ssh]::TestSsh("172.31.0.2")) {
+[object] $dhcpServer = [Vm]::GetVM([Config]::Vm.Dhcp.Name)
+if (!$dhcpServer -or ![Ssh]::TestSsh([Config]::Vm.Dhcp.Ip)) {
     Write-Error "Unable to find the DHCP/DNS server, is it running?"
 }
 
 # reset the DHCP server
-[Ssh]::InvokeRemoteCommand("172.31.0.2", 'sudo systemctl stop dnsmasq && sudo rm -f rm /var/lib/misc/dnsmasq.leases && sudo systemctl start dnsmasq', $sshUser, $sshPrivateKeyPath) | Out-Null
+[Ssh]::InvokeRemoteCommand([Config]::Vm.Dhcp.Ip, 'sudo systemctl stop dnsmasq && sudo rm -f rm /var/lib/misc/dnsmasq.leases && sudo systemctl start dnsmasq', $sshUser, $sshPrivateKeyPath) | Out-Null
 
 # provision the VMs on Hyper-V
 if (!$skipVmProvisioning) {
