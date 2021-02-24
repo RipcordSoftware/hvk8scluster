@@ -5,8 +5,8 @@ if [ "$1" == "" ]; then
     exit 1
 fi
 
-# set the Debian version, defaulting to 10.7.0
-DEBIAN_VERSION=${2:-10.7.0}
+# set the Debian version, defaulting to 10.8.0
+DEBIAN_VERSION=${2:-10.8.0}
 
 PRESEED_NAME=${1%.cfg}
 PRESEED_FILE="${PRESEED_NAME}.cfg"

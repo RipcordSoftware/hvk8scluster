@@ -7,7 +7,7 @@ param (
     [switch] $removeVhd,
     [switch] $removeVm,
     [switch] $removeTemplate,
-    [string] $debianVersion = "10.7.0"
+    [string] $debianVersion = "10.8.0"
 )
 
 $ErrorActionPreference = "Stop"
