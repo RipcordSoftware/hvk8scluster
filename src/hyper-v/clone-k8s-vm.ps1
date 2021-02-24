@@ -18,7 +18,7 @@ $ErrorActionPreference = "Stop"
 [object] $vm = [Vm]::GetVm($vmName)
 
 if ($vm -and !$updateVm) {
-    if ($removeVhd) {
+    if ($removeVm) {
         [Vm]::Remove($vmName)
         $vm = $null
     } else {
