@@ -31,7 +31,7 @@ if (!$sshPrivateKeyPath) {
 if ($nodeCount -gt 0) {
     $cluster += @(1 .. $nodeCount) | ForEach-Object {
         [int] $nodeId = $_
-        [int] $hostIp = [Config]::Vm.Master.Ip -replace '[0-9]$',"${nodeId}"
+        [string] $hostIp = [Config]::Vm.Master.Ip -replace '[0-9]$',"${nodeId}"
         @{ vmName = "k8s-node${nodeId}"; hostname = "k8s-node${nodeId}"; ip = ${hostIp}; node = $true; minMemoryMB = 256; maxMemoryMB = $nodeMemoryMB }
     }
 }
@@ -48,7 +48,8 @@ if (!$dhcpServer -or ![Ssh]::TestSsh([Config]::Vm.Dhcp.Ip)) {
 }
 
 # reset the DHCP server
-[Ssh]::InvokeRemoteCommand([Config]::Vm.Dhcp.Ip, 'sudo systemctl stop dnsmasq && sudo rm -f rm /var/lib/misc/dnsmasq.leases && sudo systemctl start dnsmasq', $sshUser, $sshPrivateKeyPath) | Out-Null
+Write-Host "Resetting the DHCP server..."
+[Ssh]::InvokeRemoteCommand([Config]::Vm.Dhcp.Ip, './remote-commands/reset-dnsmasq-state.sh', $sshUser, $sshPrivateKeyPath) | Out-Null
 
 # provision the VMs on Hyper-V
 if (!$skipVmProvisioning) {
