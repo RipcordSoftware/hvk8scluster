@@ -11,4 +11,4 @@ if [ ! $(kubectl get ns rook-ceph) ]; then
     kubectl create namespace rook-ceph
 fi
 
-helm upgrade -i --namespace rook-ceph rook-ceph rook-release/rook-ceph
+helm upgrade -i --namespace rook-ceph --wait rook-ceph rook-release/rook-ceph
