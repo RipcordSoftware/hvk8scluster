@@ -80,13 +80,13 @@ class Ssh {
                 -RedirectStandardError $stdErr -RedirectStandardOutput $stdOut -PassThru
 
             if ($p.ExitCode -eq 0) {
-                $output = Get-Content -Path $stdOut -Raw
+                $output = Get-Content -Path $stdOut -Raw -Encoding UTF8
             } else {
                 [string] $msg = "The command '${toolHint}' on '${remoteHint}' failed with exit code $($p.ExitCode)`n" +
                 "=[stderr]======================================================================`n" +
-                "$(Get-Content -Path $stdErr -Raw)`n" +
+                "$(Get-Content -Path $stdErr -Raw  -Encoding UTF8)`n" +
                 "=[stdout]======================================================================`n" +
-                "$(Get-Content -Path $stdOut -Raw)`n" +
+                "$(Get-Content -Path $stdOut -Raw  -Encoding UTF8)`n" +
                 "===============================================================================`n"
                 Write-Error $msg
             }
@@ -95,6 +95,10 @@ class Ssh {
         }
 
         return $output
+    }
+
+    static [string] DiscoverPrivateKeyPath([string] $repoRoot) {
+        return @("${repoRoot}/src/keys/id_rsa", "~/.ssh/id_rsa") | Where-Object { Test-Path $_ } | Select-Object -First 1
     }
 }
 

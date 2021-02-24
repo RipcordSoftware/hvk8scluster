@@ -14,8 +14,7 @@ $ErrorActionPreference = "Stop"
 . ./scripts/k8s.ps1
 
 if (!$sshPrivateKeyPath) {
-    [string] $repoRoot = [Config]::RepoRoot
-    $sshPrivateKeyPath = @("${repoRoot}/src/keys/id_rsa", "~/.ssh/id_rsa") | Where-Object { Test-Path $_ } | Select-Object -First 1
+    $sshPrivateKeyPath = [Ssh]::DiscoverPrivateKeyPath([Config]::RepoRoot)
 }
 
 # check the read/write permissions on the private key file
@@ -53,3 +52,6 @@ Write-Host "Asking Helm to install rook-ceph..."
 
 Write-Host "Asking kubectl to initialize the cluster and storage class..."
 [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "./remote-commands/install-rook-ceph-cluster.sh", $sshUser, $sshPrivateKeyPath)
+
+Write-Host "Asking kubectl to initialize the ceph toolbox..."
+[Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "./remote-commands/install-rook-ceph-toolbox.sh", $sshUser, $sshPrivateKeyPath)

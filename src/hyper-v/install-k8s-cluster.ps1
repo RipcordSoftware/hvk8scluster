@@ -20,8 +20,7 @@ $ErrorActionPreference = "Stop"
 . ./scripts/cluster.ps1
 
 if (!$sshPrivateKeyPath) {
-    [string] $repoRoot = [Config]::RepoRoot
-    $sshPrivateKeyPath = @("${repoRoot}/src/keys/id_rsa", "~/.ssh/id_rsa") | Where-Object { Test-Path $_ } | Select-Object -First 1
+    $sshPrivateKeyPath = [Ssh]::DiscoverPrivateKeyPath([Config]::RepoRoot)
 }
 
 # define the cluster
