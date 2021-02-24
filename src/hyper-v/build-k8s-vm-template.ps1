@@ -24,8 +24,8 @@ if (!(Test-Path $isoPath)) {
 }
 
 # check the DHCP server is available
-[object] $dhcpServer = [Vm]::GetVM("k8s-dhcp-dns")
-if (!$dhcpServer -or ![Ssh]::TestSsh("172.31.0.2")) {
+[object] $dhcpServer = [Vm]::GetVM([Config]::Vm.Dhcp.Name)
+if (!$dhcpServer -or ![Ssh]::TestSsh([Config]::Vm.Dhcp.Ip)) {
     Write-Error "Unable to find the DHCP/DNS server, is it running?"
 }
 

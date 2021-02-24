@@ -1,6 +1,8 @@
 $ErrorActionPreference = "Stop"
 
 class Ssh {
+    static [object] $defaultSshArgs = @("-q", "-o", "StrictHostKeyChecking=no")
+
     static [void] RemoveHostKeys([string[]] $keys) {
         [string[]] $knownHosts = Get-Content -Path "~/.ssh/known_hosts"
         $knownHosts | Where-Object {
@@ -9,32 +11,36 @@ class Ssh {
         } | Out-File -FilePath "~/.ssh/known_hosts" -Encoding ascii
     }
 
-    static [string] InvokeRemoteCommand([string] $ip, [string] $command, [string] $user, [string] $privateKeyPath) {
-        [string] $stdErr = New-TemporaryFile
-        [string] $stdOut = New-TemporaryFile
-
-        [object] $sshArgs = @("-q", "-o", "StrictHostKeyChecking=no", "-i", $privateKeyPath, "-l", $user,  $ip, $command)
-
-        [object] $p = Start-Process -NoNewWindow -Wait -FilePath "ssh.exe" -ArgumentList $sshArgs `
-            -RedirectStandardError $stdErr -RedirectStandardOutput $stdOut -PassThru
-
-        [string] $output = $null
-        try {
-            if ($p.ExitCode -eq 0) {
-                $output = Get-Content -Path $stdOut -Raw
-            } else {
-                [string] $msg = "The command '${command}' on host '${ip}' failed with exit code $($p.ExitCode)`n" +
-                "=[stderr]======================================================================`n" +
-                "$(Get-Content -Path $stdErr -Raw)`n" +
-                "=[stdout]======================================================================`n" +
-                "$(Get-Content -Path $stdOut -Raw)`n" +
-                "===============================================================================`n"
-                Write-Error $msg
-            }
-        } finally {
-            Remove-Item -Path @($stdOut, $stdErr) -Force -ErrorAction Continue
+    static [void] CopyFile([string] $ip, [string] $file, [string] $remotePath, [string] $user, [string] $privateKeyPath, [bool] $setExecutable) {
+        if (!(Test-Path -Path $file -PathType leaf)) {
+            Write-Error "Unable to find file '${file}'"
         }
 
+        [string] $targetPath = [System.IO.Path]::Combine($remotePath, $file) -replace '\\','/'
+        [string] $targetDir = [System.IO.Path]::GetDirectoryName($targetPath) -replace '\\','/'
+        if ($targetDir) {
+            [string] $mkdirCommand = 'mkdir -p "' + $targetDir + '"'
+            [Ssh]::InvokeRemoteCommand($ip, $mkdirCommand, $user, $privateKeyPath)
+        }
+
+        [string] $target = "${user}@${ip}:${targetPath}"
+        [object] $scpArgs = [Ssh]::defaultSshArgs + @("-i", $privateKeyPath, $file, $target)
+        [Ssh]::StartProcess("scp.exe", $scpArgs, $file, $ip)
+
+        if ($setExecutable) {
+            [string] $chmodCommand += 'chmod u+x "' + $targetPath + '"'
+            [Ssh]::InvokeRemoteCommand($ip, $chmodCommand, $user, $privateKeyPath)
+        }
+    }
+
+    static [string] InvokeRemoteCommand([string] $ip, [string] $command, [string] $user, [string] $privateKeyPath) {
+        if (($command -match '^[a-zA-Z0-9/\\_\-. ]*$') -and (Test-Path -Path $command -PathType leaf)) {
+            [Ssh]::CopyFile($ip, $command, "/tmp/", $user, $privateKeyPath, $true)
+            $command = "/tmp/${command}"
+        }
+
+        [object] $sshArgs = [Ssh]::defaultSshArgs + @("-i", $privateKeyPath, "-l", $user, $ip, $command)
+        [string] $output = [Ssh]::StartProcess("ssh.exe", $sshArgs, $command, $ip)
         return $output
     }
 
@@ -61,6 +67,34 @@ class Ssh {
             Where-Object { ! (@("NT AUTHORITY\SYSTEM", "BUILTIN\Administrators") -contains $_.IdentityReference) } |
             Where-Object { $_.IdentityReference -notmatch "\\${env:USERNAME}`$" }
         return !$keyAccess
+    }
+
+    hidden static [string] StartProcess([string] $tool, [object] $arguments, [string] $toolHint, [string] $remoteHint) {
+        [string] $output = $null
+
+        [string] $stdErr = New-TemporaryFile
+        [string] $stdOut = New-TemporaryFile
+
+        try {
+            [object] $p = Start-Process -NoNewWindow -Wait -FilePath $tool -ArgumentList $arguments `
+                -RedirectStandardError $stdErr -RedirectStandardOutput $stdOut -PassThru
+
+            if ($p.ExitCode -eq 0) {
+                $output = Get-Content -Path $stdOut -Raw
+            } else {
+                [string] $msg = "The command '${toolHint}' on '${remoteHint}' failed with exit code $($p.ExitCode)`n" +
+                "=[stderr]======================================================================`n" +
+                "$(Get-Content -Path $stdErr -Raw)`n" +
+                "=[stdout]======================================================================`n" +
+                "$(Get-Content -Path $stdOut -Raw)`n" +
+                "===============================================================================`n"
+                Write-Error $msg
+            }
+        } finally {
+            Remove-Item -Path @($stdOut, $stdErr) -Force -ErrorAction Continue
+        }
+
+        return $output
     }
 }
 
