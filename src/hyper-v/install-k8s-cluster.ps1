@@ -1,7 +1,7 @@
 param (
     [int] $nodeCount = 2,
-    [int] $nodeMemoryMB = 6144,
-    [int] $masterMemoryMB = 4096,
+    [int] $nodeMemoryMB = 4096,
+    [int] $masterMemoryMB = 2048,
     [string] $vmTemplateName,
     [string] $sshUser = "hvk8s",
     [string] $sshPrivateKeyPath,
@@ -24,14 +24,14 @@ if (!$sshPrivateKeyPath) {
 }
 
 # define the cluster
-[object] $master = @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = [Config]::Vm.Master.Ip; node = $false; minMemoryMB = 256; maxMemoryMB = $masterMemoryMB }
+[object] $master = @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = [Config]::Vm.Master.Ip; node = $false; memoryMB = $masterMemoryMB }
 [object] $cluster = @( $master )
 
 if ($nodeCount -gt 0) {
     $cluster += @(1 .. $nodeCount) | ForEach-Object {
         [int] $nodeId = $_
         [string] $hostIp = [Config]::Vm.Master.Ip -replace '[0-9]$',"${nodeId}"
-        @{ vmName = "k8s-node${nodeId}"; hostname = "k8s-node${nodeId}"; ip = ${hostIp}; node = $true; minMemoryMB = 256; maxMemoryMB = $nodeMemoryMB }
+        @{ vmName = "k8s-node${nodeId}"; hostname = "k8s-node${nodeId}"; ip = ${hostIp}; node = $true; memoryMB = $nodeMemoryMB }
     }
 }
 
@@ -57,12 +57,12 @@ if (!$skipVmProvisioning) {
         if ($vmTemplateName) {
             Write-Host "Cloning '${vmTemplateName}' to '${vmName}'..."
             .\clone-k8s-vm.ps1 `
-                -vmTemplateName $vmTemplateName -vmName $vmName -vmIp $_.ip -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB `
+                -vmTemplateName $vmTemplateName -vmName $vmName -vmIp $_.ip -vmMemoryMB $_.memoryMB `
                 -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
         } else {
             Write-Host "Creating '${vmName}'..."
             .\install-k8s-vm.ps1 `
-                -vmName $vmName -vmIp $_.ip -vmMinMemoryMB $_.minMemoryMB -vmMaxMemoryMB $_.maxMemoryMB `
+                -vmName $vmName -vmIp $_.ip -vmMemoryMB $_.memoryMB `
                 -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
         }
     }

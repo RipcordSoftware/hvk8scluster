@@ -10,8 +10,7 @@ class Vm {
         [string] $vmName,
         [string] $isoPath,
         [int] $vmCpuCount = 2,
-        [int] $vmMinMemoryMB = 256,
-        [int] $vmMaxMemoryMB = 1024,
+        [int] $vmMemoryMB = 256,
         [int] $vmDiskSizeGB = 4,
         [string] $vmSwitch = "Kubernetes",
         [switch] $removeVhd,
@@ -34,8 +33,7 @@ class Vm {
         }
 
         [bool] $createdVm = $false
-        [int64] $vmMinMemory = $vmMinMemoryMB * $script:K8s::Memory.Mi
-        [int64] $vmMaxMemory = $vmMaxMemoryMB * $script:K8s::Memory.Mi
+        [int64] $vmMemory = $vmMemoryMB * $script:K8s::Memory.Mi
         [int64] $vmDiskSize = $vmDiskSizeGB * $script:K8s::Memory.Gi
 
         if (!$vm) {
@@ -48,7 +46,8 @@ class Vm {
 
         if ($createdVm) {
             try {
-                Set-VM -Name $vmName -MemoryStartupBytes $vmMaxMemory -AutomaticStartAction Start -AutomaticStartDelay 30 -ProcessorCount $vmCpuCount -DynamicMemory -MemoryMinimumBytes $vmMinMemory -MemoryMaximumBytes $vmMaxMemory
+                Set-VM -Name $vmName -MemoryStartupBytes $vmMemory -AutomaticStartAction Start -AutomaticStartDelay 30 `
+                    -ProcessorCount $vmCpuCount -StaticMemory -CheckpointType Disabled
 
                 [object] $scsi = Get-VMScsiController -VMName $vmName
                 [object] $dvdDrive = Add-VMDvdDrive -VMDriveController $scsi -Path $isoPath -Passthru
@@ -60,15 +59,14 @@ class Vm {
                 throw
             }
         } else {
-            [Vm]::Update($vmName, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB)
+            [Vm]::Update($vmName, $vmCpuCount, $vmMemory)
         }
 
         return $createdVm
     }
 
-    static [void] Update([string] $vmName, [int] $vmCpuCount, [int] $vmMinMemoryMB, [int] $vmMaxMemoryMB) {
-        [int64] $vmMinMemory = $vmMinMemoryMB * $script:K8s::Memory.Mi
-        [int64] $vmMaxMemory = $vmMaxMemoryMB * $script:K8s::Memory.Mi
+    static [void] Update([string] $vmName, [int] $vmCpuCount, [int] $vmMemoryMB) {
+        [int64] $vmMemoryBytes = $vmMemoryMB * $script:K8s::Memory.Mi
 
         [object] $vmMemory = Get-VMMemory -VMName $vmName
         [object] $vmCpu = Get-VMProcessor -VMName $vmName
@@ -77,11 +75,8 @@ class Vm {
         if ($vmCpu.Count -ne $vmCpuCount) {
             $changes.ProcessorCount = $vmCpuCount
         }
-        if ($vmMaxMemory -gt $vmMemory.Maximum) {
-            $changes.MemoryMaximumBytes = $vmMaxMemory
-        }
-        if ($vmMinMemory -gt $vmMemory.Minimum) {
-            $changes.MemoryMinimumBytes = $vmMinMemory
+        if ($vmMemoryBytes -gt $vmMemory.Startup) {
+            $changes.MemoryStartupBytes = $vmMemoryBytes
         }
         if ($changes.Count -gt 0) {
             Set-VM -Name $vmName @changes

@@ -3,8 +3,7 @@ param (
     [string] $vmName = "k8s-unknown",
     [string] $vmIp,
     [int] $vmCpuCount = 2,
-    [int] $vmMinMemoryMB = 1024,
-    [int] $vmMaxMemoryMB = 2048,
+    [int] $vmMemoryMB = 1024,
     [switch] $removeVhd,
     [switch] $removeVm,
     [switch] $updateVm
@@ -34,9 +33,11 @@ if (!$vm) {
         Write-Error "Unable to find a vmcx file for the exported template '${vmTemplateName}'"
     }
 
+    Write-Host "Removing the old VHD..."
     [Vm]::RemoveVhd($vmName)
 
     # import the VM
+    Write-Host "Importing the template..."
     [string] $diskDir = [Vm]::GetVhdDirectory($vmName)
     $vm = Import-Vm -Path $sourceVmcxPath -VhdDestinationPath $diskDir -Copy -GenerateNewId
 
@@ -47,7 +48,8 @@ if (!$vm) {
 }
 
 # update the CPU cores and memory
-[Vm]::Update($vmName, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB)
+Write-Host "Updating the cloned VM..."
+[Vm]::Update($vmName, $vmCpuCount, $vmMemoryMB)
 
 if ($createdVm) {
     # remove any old host keys
@@ -55,5 +57,6 @@ if ($createdVm) {
         [Ssh]::RemoveHostKeys($vmIp)
     }
 
+    Write-Host "Starting the cloned VM..."
     Start-VM -Name $vmName
 }
