@@ -33,6 +33,10 @@ if (!$dhcpServer -or ![Ssh]::TestSsh([Config]::Vm.Dhcp.Ip)) {
 
 [object] $nodeVms = $vms | Where-Object { $_.Name -match $nodeRegEx }
 
+if ($nodeVms.Count -lt 3) {
+    Write-Error "You must have at least three nodes before Rook/Ceph can be installed; only $($nodeVms.Count) nodes found"
+}
+
 [uint64] $vmStorageDiskSize = $vmStorageDiskSizeGB * [K8s]::Memory.Gi
 
 $nodeVms | Where-Object {
@@ -40,27 +44,12 @@ $nodeVms | Where-Object {
     } | ForEach-Object {
         Write-Host "Adding a storage disk to '$($_.Name)'..."
         [string] $storageDiskPath = [Vm]::GetVhdPath($_.Name, "storage")
-        New-VHD -Path $storageDiskPath -Dynamic -SizeBytes $vmStorageDiskSize
+        New-VHD -Path $storageDiskPath -Dynamic -SizeBytes $vmStorageDiskSize | Out-Null
         Add-VMHardDiskDrive -VMName $_.Name -Path $storageDiskPath
     }
 
 Write-Host "Asking Helm to install rook-ceph..."
-[Ssh]::InvokeRemoteCommand(
-    [Config]::Vm.Master.Ip,
-    'helm repo add rook-release https://charts.rook.io/release && ' +
-    'if [ ! $(kubectl get ns rook-ceph) ]; then kubectl create namespace rook-ceph; fi && ' +
-    'helm upgrade -i --namespace rook-ceph rook-ceph rook-release/rook-ceph',
-    $sshUser, $sshPrivateKeyPath)
+[Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "./remote-commands/install-rook-ceph-chart.sh", $sshUser, $sshPrivateKeyPath)
 
 Write-Host "Asking kubectl to initialize the cluster and storage class..."
-[Ssh]::InvokeRemoteCommand(
-    [Config]::Vm.Master.Ip,
-    'if [ ! -d "code" ]; then ' +
-    'mkdir -p code && cd code && ' +
-    'git clone --single-branch --branch release-1.5 --depth 1 https://github.com/rook/rook.git && ' +
-    'cd rook/cluster/examples/kubernetes/ceph && ' +
-    'kubectl apply -f cluster.yaml && ' +
-    'cd csi/rbd && ' +
-    'kubectl apply -f storageclass.yaml; ' +
-    'fi',
-    $sshUser, $sshPrivateKeyPath)
+[Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "./remote-commands/install-rook-ceph-cluster.sh", $sshUser, $sshPrivateKeyPath)
