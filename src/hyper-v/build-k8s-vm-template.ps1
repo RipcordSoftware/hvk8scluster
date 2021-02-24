@@ -1,8 +1,7 @@
 param (
     [string] $vmName = "k8s-template",
     [int] $vmCpuCount = 2,
-    [int] $vmMinMemoryMB = 1024,
-    [int] $vmMaxMemoryMB = 2048,
+    [int] $vmMemoryMB = 768,
     [int] $vmDiskSizeGB = 40,
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
@@ -30,7 +29,7 @@ if (!$dhcpServer -or ![Ssh]::TestSsh([Config]::Vm.Dhcp.Ip)) {
 }
 
 # create the VM
-[Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $false) | Out-Null
+[Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $false) | Out-Null
 
 # wait for the VM to come up
 Write-Host "Waiting for VM IP address for '${vmName}'..."
