@@ -29,7 +29,10 @@ class Cluster {
         [string] $command =
             'wget https://docs.projectcalico.org/v3.17/manifests/calico.yaml -O calico.yaml && ' +
             "sed -i 's/192.168.0.0/172.30.0.0/' calico.yaml && " +
-            'kubectl apply -f calico.yaml'
+            'kubectl apply -f calico.yaml && ' +
+            'if [ ! -f /usr/local/bin/calicoctl ]; then ' +
+            ' wget https://github.com/projectcalico/calicoctl/releases/download/v3.17.3/calicoctl -O /usr/local/bin/calicoctl && ' +
+            ' chmod a+x /usr/local/bin/calicoctl; fi'
         $script:Ssh::InvokeRemoteCommand($ip, $command, $user, $privateKeyPath)
     }
 
