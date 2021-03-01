@@ -9,6 +9,7 @@ param (
     [switch] $removeVm,
     [switch] $updateVm,
     [switch] $skipVmProvisioning,
+    [switch] $skipLbProvisioning,
     [switch] $ignoreKeyPermissions
 )
 
@@ -109,4 +110,9 @@ $cluster | Where-Object { $_.node } | ForEach-Object {
 
     Write-Host "Node '$($_.hostname)' is requesting to join the cluster..."
     [Cluster]::Join($_.ip, $joinCommand, $sshUser, $sshPrivateKeyPath)
+}
+
+if (!$skipLbProvisioning) {
+    Write-Host "Installing bitnami-metallb..."
+    [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, './remote-commands/install-bitnami-metallb-chart.sh', $sshUser, $sshPrivateKeyPath)
 }

@@ -1,5 +1,11 @@
 $ErrorActionPreference = "Stop"
 
+enum CopyFileMode {
+    None = 0
+    SetExecutable = 1
+    IncludeSourcePath = 2
+}
+
 class Ssh {
     static [object] $defaultSshArgs = @("-q", "-o", "StrictHostKeyChecking=no")
 
@@ -11,12 +17,16 @@ class Ssh {
         } | Out-File -FilePath "~/.ssh/known_hosts" -Encoding ascii
     }
 
-    static [void] CopyFile([string] $ip, [string] $file, [string] $remotePath, [string] $user, [string] $privateKeyPath, [bool] $setExecutable) {
+    static [void] CopyFile([string] $ip, [string] $file, [string] $remotePath, [string] $user, [string] $privateKeyPath, [CopyFileMode] $mode) {
         if (!(Test-Path -Path $file -PathType leaf)) {
             Write-Error "Unable to find file '${file}'"
         }
 
-        [string] $targetPath = [System.IO.Path]::Combine($remotePath, $file) -replace '\\','/'
+        [string] $targetPath = $remotePath
+        if ($mode -band [CopyFileMode]::IncludeSourcePath) {
+            $targetPath = [System.IO.Path]::Combine($remotePath, $file) -replace '\\','/'
+        }
+
         [string] $targetDir = [System.IO.Path]::GetDirectoryName($targetPath) -replace '\\','/'
         if ($targetDir) {
             [string] $mkdirCommand = 'mkdir -p "' + $targetDir + '"'
@@ -27,7 +37,7 @@ class Ssh {
         [object] $scpArgs = [Ssh]::defaultSshArgs + @("-i", $privateKeyPath, $file, $target)
         [Ssh]::StartProcess("scp.exe", $scpArgs, $file, $ip)
 
-        if ($setExecutable) {
+        if ($mode -band [CopyFileMode]::SetExecutable) {
             [string] $chmodCommand += 'chmod u+x "' + $targetPath + '"'
             [Ssh]::InvokeRemoteCommand($ip, $chmodCommand, $user, $privateKeyPath)
         }
@@ -35,7 +45,7 @@ class Ssh {
 
     static [string] InvokeRemoteCommand([string] $ip, [string] $command, [string] $user, [string] $privateKeyPath) {
         if (($command -match '^[a-zA-Z0-9/\\_\-. ]*$') -and (Test-Path -Path $command -PathType leaf)) {
-            [Ssh]::CopyFile($ip, $command, "/tmp/", $user, $privateKeyPath, $true)
+            [Ssh]::CopyFile($ip, $command, "/tmp/", $user, $privateKeyPath, [CopyFileMode]::IncludeSourcePath -bor [CopyFileMode]::SetExecutable)
             $command = "/tmp/${command}"
         }
 
