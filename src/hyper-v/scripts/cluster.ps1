@@ -48,4 +48,22 @@ class Cluster {
 
         $script:Ssh::InvokeRemoteCommand($ip, $command, $user, $privateKeyPath)
     }
+
+    static [string] GetClusterConfig([string] $ip, [string] $user, [string] $privateKeyPath) {
+        return $script:Ssh::InvokeRemoteCommand($ip, "cat ~/.kube/config", $user, $privateKeyPath)
+    }
+
+    static [void] SaveClusterConfig([string] $path, [bool] $force, [string] $ip, [string] $user, [string] $privateKeyPath) {
+        [string] $conf = [Cluster]::GetClusterConfig($ip, $user, $privateKeyPath)
+
+        if (!$path) {
+            $path = '~/.kube/config'
+        }
+
+        [object] $outArgs = @{ Encoding = 'ascii'; FilePath = $path }
+        if (!$force) {
+            $outArgs.NoClobber = $true
+        }
+        $conf | Out-File @outArgs
+    }
 }
