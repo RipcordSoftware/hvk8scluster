@@ -27,22 +27,12 @@ if ($vm -and !$updateVm) {
 
 [bool] $createdVm = $false
 if (!$vm) {
-    [string] $sourceVmPath = "$([Config]::ExportPath)/${vmTemplateName}"
-    [string] $sourceVmcxPath = Get-ChildItem -Path $sourceVmPath -Include "*.vmcx" -Recurse | Select-Object -First 1
-    if (!$sourceVmcxPath) {
-        Write-Error "Unable to find a vmcx file for the exported template '${vmTemplateName}'"
-    }
-
     Write-Host "Removing the old VHD..."
     [Vm]::RemoveVhd($vmName)
 
     # import the VM
     Write-Host "Importing the template..."
-    [string] $diskDir = [Vm]::GetVhdDirectory($vmName)
-    $vm = Import-Vm -Path $sourceVmcxPath -VhdDestinationPath $diskDir -Copy -GenerateNewId
-
-    # rename the VM
-    Get-VM -id $vm.Id | Rename-VM -NewName $vmName
+    $vm = [Vm]::Import($vmTemplateName, $vmName)
 
     $createdVm = $true
 }

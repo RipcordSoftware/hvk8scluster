@@ -1,8 +1,8 @@
 param (
-    [int] $nodeCount = 2,
+    [int] $nodeCount = 3,
     [int] $nodeMemoryMB = 4096,
     [int] $masterMemoryMB = 2048,
-    [string] $vmTemplateName,
+    [string] $vmTemplateName = 'k8s-template',
     [string] $sshUser = "hvk8s",
     [string] $sshPrivateKeyPath,
     [switch] $removeVhd,
@@ -10,7 +10,8 @@ param (
     [switch] $updateVm,
     [switch] $skipVmProvisioning,
     [switch] $skipLbProvisioning,
-    [switch] $ignoreKeyPermissions
+    [switch] $ignoreKeyPermissions,
+    [switch] $disableVmTemplate
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,6 +42,11 @@ if (!$ignoreKeyPermissions -and ![Ssh]::CheckKeyFilePermissions($sshPrivateKeyPa
     Write-Error "The permissions on the private key file '$sshPrivateKeyPath' are too open, OpenSSH requires these are limited to the current user only. Alternately specify -ignoreKeyPermissions on the command line."
 }
 
+# check the template is available unless we are in non-template mode
+if (!$disableVmTemplate -and $vmTemplateName -and ![Vm]::GetExportedVmConfigPath($vmTemplateName)) {
+    Write-Error "Unable to find VM template '${vmTemplateName}', you must create the template file or specify -disableVmTemplate"
+}
+
 # check the DHCP server is available
 [object] $dhcpServer = [Vm]::GetVM([Config]::Vm.Dhcp.Name)
 if (!$dhcpServer -or ![Ssh]::TestSsh([Config]::Vm.Dhcp.Ip)) {
@@ -55,7 +61,7 @@ Write-Host "Resetting the DHCP server..."
 if (!$skipVmProvisioning) {
     $cluster | ForEach-Object {
         [string] $vmName = $_.vmName
-        if ($vmTemplateName) {
+        if (!$disableVmTemplate -and $vmTemplateName) {
             Write-Host "Cloning '${vmTemplateName}' to '${vmName}'..."
             .\clone-k8s-vm.ps1 `
                 -vmTemplateName $vmTemplateName -vmName $vmName -vmIp $_.ip -vmMemoryMB $_.memoryMB `
