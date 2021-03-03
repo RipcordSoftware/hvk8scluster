@@ -14,3 +14,5 @@ class Config {
         Master = @{ Name = "k8s-master"; Ip = "172.31.0.10" }
     }
 }
+
+[type] $script:Config = &{ return [Config] }

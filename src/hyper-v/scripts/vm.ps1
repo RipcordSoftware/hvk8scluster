@@ -13,9 +13,9 @@ class Vm {
         [int] $vmMemoryMB = 256,
         [int] $vmDiskSizeGB = 4,
         [string] $vmSwitch = "Kubernetes",
-        [switch] $removeVhd,
-        [switch] $removeVm,
-        [switch] $updateVm
+        [bool] $removeVhd,
+        [bool] $removeVm,
+        [bool] $updateVm
     ) {
         if ($removeVm -and $updateVm) {
             Write-Error "Only one of removeVm or updateVm may be specified"
@@ -139,5 +139,39 @@ class Vm {
         } else {
             return $null
         }
+    }
+
+    static [object] Export([string] $vmName, [bool] $remove) {
+        [string] $exportPath = "$($script:Config::ExportPath)/${vmName}"
+        if ($remove -and (Test-Path -Path $exportPath)) {
+            Remove-Item -Path $exportPath -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        # export the VM to the template path
+        return Export-Vm -Name $vmName -Path $script:Config::ExportPath -Passthru
+    }
+
+    static [object] Import([string] $source, [string] $dest) {
+        [string] $sourceVmcxPath = [Vm]::GetExportedVmConfigPath($source)
+        if (!$sourceVmcxPath) {
+            Write-Error "Unable to find a vmcx file for the exported VM '${source}'"
+        }
+
+        [string] $diskDir = [Vm]::GetVhdDirectory($dest)
+        [object] $vm = Import-Vm -Path $sourceVmcxPath -VhdDestinationPath $diskDir -Copy -GenerateNewId
+
+        # rename the VM
+        Get-VM -id $vm.Id | Rename-VM -NewName $dest
+
+        return $vm
+    }
+
+    static [string] GetExportedVmConfigPath([string] $vmName) {
+        [string] $path = [Vm]::GetExportedVmDir($vmName)
+        return Get-ChildItem -Path $path -Include "*.vmcx" -Recurse | Select-Object -First 1
+    }
+
+    static [string] GetExportedVmDir([string] $vmName) {
+        return "$($script:Config::ExportPath)/${vmName}"
     }
 }

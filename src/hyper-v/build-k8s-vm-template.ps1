@@ -6,7 +6,7 @@ param (
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
-    [switch] $removeTemplate,
+    [switch] $removeVmTemplate,
     [string] $debianVersion = "10.8.0"
 )
 
@@ -44,12 +44,6 @@ Write-Host "Stopping the template VM..."
 Stop-Vm -Name $vmName
 Set-Vm -Name $vmName -AutomaticStartAction Nothing
 
-# remove the old template file
-[string] $templatePath = "$([Config]::ExportPath)/${vmName}"
-if ($removeTemplate -and (Test-Path -Path $templatePath)) {
-    Remove-Item -Path $templatePath -Recurse -Force -ErrorAction SilentlyContinue
-}
-
 # export the VM to the template path
 Write-Host "Exporting the template VM..."
-Export-Vm -Name $vmName -Path $([Config]::ExportPath)
+[Vm]::Export($vmName, $removeVmTemplate)
