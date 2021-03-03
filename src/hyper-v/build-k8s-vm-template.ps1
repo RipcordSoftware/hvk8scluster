@@ -42,6 +42,7 @@ Write-Host "Waiting for active SSH on '${ip}'..."
 # stop the VM and export it
 Write-Host "Stopping the template VM..."
 Stop-Vm -Name $vmName
+Set-Vm -Name $vmName -AutomaticStartAction Nothing
 
 # remove the old template file
 [string] $templatePath = "$([Config]::ExportPath)/${vmName}"
