@@ -1,3 +1,7 @@
+param (
+    [string] $distro = 'Ubuntu-18.04'
+)
+
 $ErrorActionPreference = "Stop"
 
 [object] $here = Get-Item -Path $PSScriptRoot
@@ -8,4 +12,4 @@ $ErrorActionPreference = "Stop"
 
 [string] $exec = "cd ${cwd} && ./install-ubuntu-tools.sh"
 
-wsl -d Ubuntu-18.04 --exec bash -c $exec
+wsl -d $distro -u root --exec bash -c $exec

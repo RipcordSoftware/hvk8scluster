@@ -1,4 +1,6 @@
+[CmdletBinding(PositionalBinding=$false)]
 param (
+    [string] $distro = 'Ubuntu-18.04',
     [Parameter(ValueFromRemainingArguments)][string] $commandArguments
 )
 
@@ -12,4 +14,4 @@ $ErrorActionPreference = "Stop"
 
 [string] $exec = "cd ${cwd} && ./build.sh ${commandArguments}"
 
-wsl -d Ubuntu-18.04 --exec bash -c $exec
+wsl -d $distro --exec bash -c $exec
