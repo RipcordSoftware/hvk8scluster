@@ -28,7 +28,6 @@ if (![Vm]::IsInstalled()) {
 if (![Vm]::IsAdministrator()) {
     Write-Error "You require Administrator rights or membership of the 'Hyper-V Administrator' group"
 }
-exit
 
 if (!$sshPrivateKeyPath) {
     $sshPrivateKeyPath = [Ssh]::DiscoverPrivateKeyPath([Config]::RepoRoot)
