@@ -5,6 +5,7 @@ $ErrorActionPreference = "Stop"
 
 class Vm {
     static [string] $VhdPath = "$($env:PUBLIC)\Documents\Hyper-V\Virtual Hard Disks"
+    static [string] $HyperVAdminSid = "S-1-5-32-578"
 
     static [bool] Create(
         [string] $vmName,
@@ -173,5 +174,15 @@ class Vm {
 
     static [string] GetExportedVmDir([string] $vmName) {
         return "$($script:Config::ExportPath)/${vmName}"
+    }
+
+    static [bool] IsAdministrator() {
+        return !!([System.Security.Principal.WindowsIdentity]::GetCurrent().Groups | Where-Object { $_.Value -eq [Vm]::HyperVAdminSid })
+    }
+
+    static [bool] IsInstalled() {
+        [object] $vmms = Get-Service vmms -ErrorAction SilentlyContinue
+        [object] $compute = Get-Service vmcompute -ErrorAction SilentlyContinue
+        return !!$vmms -and !!$compute
     }
 }

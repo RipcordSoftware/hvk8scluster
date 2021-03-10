@@ -17,6 +17,14 @@ $ErrorActionPreference = "Stop"
 . ./scripts/config.ps1
 . ./scripts/ssh.ps1
 
+if (![Vm]::IsInstalled()) {
+    Write-Error "Hyper-V is not installed or the service isn't running, please install manually or using the provided scripts"
+}
+
+if (![Vm]::IsAdministrator()) {
+    Write-Error "You require Administrator rights or membership of the 'Hyper-V Administrator' group"
+}
+
 [string] $isoPath = "$([Config]::IsoPath)/preseed-dhcp-dns-debian-${debianVersion}-amd64-netinst.iso"
 if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '${isoPath}' is missing, please build it before proceeding"
