@@ -13,6 +13,14 @@ $ErrorActionPreference = "Stop"
 . ./scripts/vm.ps1
 . ./scripts/k8s.ps1
 
+if (![Vm]::IsInstalled()) {
+    Write-Error "Hyper-V is not installed or the service isn't running, please install manually or using the provided scripts"
+}
+
+if (![Vm]::IsAdministrator()) {
+    Write-Error "You require Administrator rights or membership of the 'Hyper-V Administrator' group"
+}
+
 if (!$sshPrivateKeyPath) {
     $sshPrivateKeyPath = [Ssh]::DiscoverPrivateKeyPath([Config]::RepoRoot)
 }
