@@ -143,13 +143,13 @@ class Vm {
     }
 
     static [object] Export([string] $vmName, [bool] $remove) {
-        [string] $exportPath = "$($script:Config::ExportPath)/${vmName}"
+        [string] $exportPath = "$($script:Config::ExportDir)/${vmName}"
         if ($remove -and (Test-Path -Path $exportPath)) {
             Remove-Item -Path $exportPath -Recurse -Force -ErrorAction SilentlyContinue
         }
 
         # export the VM to the template path
-        return Export-Vm -Name $vmName -Path $script:Config::ExportPath -Passthru
+        return Export-Vm -Name $vmName -Path $script:Config::ExportDir -Passthru
     }
 
     static [object] Import([string] $source, [string] $dest) {
@@ -173,7 +173,7 @@ class Vm {
     }
 
     static [string] GetExportedVmDir([string] $vmName) {
-        return "$($script:Config::ExportPath)/${vmName}"
+        return "$($script:Config::ExportDir)/${vmName}"
     }
 
     static [bool] IsAdministrator() {
