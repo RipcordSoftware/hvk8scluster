@@ -5,5 +5,8 @@ if [ $EUID -ne 0 ]; then
     exit 1
 fi
 
+mkdir -p /tmp/
+chmod 777 /tmp/
+
 apt-get update && \
 apt-get install -y xorriso genisoimage
