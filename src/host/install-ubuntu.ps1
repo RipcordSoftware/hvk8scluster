@@ -16,15 +16,15 @@ $ProgressPreference = 'SilentlyContinue'
 
 if (!$skipDownload) {
     Write-Host "Downloading the Linux distribution package..."
-    Invoke-WebRequest -Uri https://aka.ms/wsl-ubuntu-${version} -OutFile $archivePath -UseBasicParsing
+    Invoke-WebRequest -Uri https://aka.ms/wsl-ubuntu-${version} -OutFile $archivePath -UseBasicParsing | Out-Null
 }
 
-New-item -Path $tempDistroDir -ItemType Directory -Force
+New-item -Path $tempDistroDir -ItemType Directory -Force | Out-Null
 
 if ($skipStore) {
     Write-Host "Unpacking the distribution package..."
-    Copy-Item -Path $archivePath -Destination $archiveZipPath
-    Expand-Archive -Path $archiveZipPath -DestinationPath $tempDistroDir -Force
+    Copy-Item -Path $archivePath -Destination $archiveZipPath | Out-Null
+    Expand-Archive -Path $archiveZipPath -DestinationPath $tempDistroDir -Force | Out-Null
 }
 else {
     Write-Host "Registering the package as an application..."
@@ -32,9 +32,9 @@ else {
     Add-AppxPackage $archivePath
 
     # get the path to the package so we can run it for the first time
-    [object] $packages = Get-AppxPackage    
-    [object] $ubuntu = $packages | 
-        Where-Object { $_ -and $_.InstallLocation } | 
+    [object] $packages = Get-AppxPackage
+    [object] $ubuntu = $packages |
+        Where-Object { $_ -and $_.InstallLocation } |
         Where-Object {
             [string] $manifestPath = Join-Path -Path $_.InstallLocation -ChildPath "AppxManifest.xml"
             if (Test-Path $manifestPath) {
@@ -52,8 +52,8 @@ else {
             }
         } | Select-Object -First 1
 
-    Copy-Item -Path "$($ubuntu.InstallLocation)\ubuntu${version}.exe" -Destination $tempDistroDir -Force
-    Copy-Item -Path "$($ubuntu.InstallLocation)\install.tar.gz" -Destination $tempDistroDir -Force
+    Copy-Item -Path "$($ubuntu.InstallLocation)\ubuntu${version}.exe" -Destination $tempDistroDir -Force | Out-Null
+    Copy-Item -Path "$($ubuntu.InstallLocation)\install.tar.gz" -Destination $tempDistroDir -Force | Out-Null
 }
 
 [string] $tempFile = New-TemporaryFile
@@ -63,5 +63,5 @@ try {
     Write-Host "Running the distribution for the first time..."
     Start-Process -RedirectStandardInput $tempFile -FilePath "${tempDistroDir}\ubuntu${version}.exe" -Wait -NoNewWindow
 } finally {
-    Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue | Out-Null
 }
