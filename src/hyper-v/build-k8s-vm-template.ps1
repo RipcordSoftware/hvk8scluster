@@ -6,6 +6,7 @@ param (
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
+    [switch] $skipVmProvisioning,
     [switch] $removeVmTemplate,
     [string] $debianVersion = "10.8.0"
 )
@@ -16,28 +17,30 @@ $ErrorActionPreference = "Stop"
 . ./scripts/config.ps1
 . ./scripts/ssh.ps1
 
-# check the preseed image is available
-[string] $isoPath = "$([Config]::IsoDir)/preseed-k8s-debian-${debianVersion}-amd64-netinst.iso"
-if (!(Test-Path $isoPath)) {
-    Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
+if (!$skipVmProvisioning) {
+    # check the preseed image is available
+    [string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-k8s-debian-${debianVersion}-amd64-netinst.iso"
+    if (!(Test-Path $isoPath)) {
+        Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
+    }
+
+    # check the DHCP server is available
+    [object] $dhcpServer = $global:rs.Vm::GetVM($global:rs.Config::Vm.Dhcp.Name)
+    if (!$dhcpServer -or !$global:rs.Ssh::TestSsh($global:rs.Config::Vm.Dhcp.Ip)) {
+        Write-Error "Unable to find the DHCP/DNS server, is it running?"
+    }
+
+    # create the VM
+    $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $false) | Out-Null
+
+    # wait for the VM to come up
+    Write-Host "Waiting for VM IP address for '${vmName}'..."
+    [string] $ip = $global:rs.Vm::WaitForIpv4($vmName, $true)
+
+    # wait for the SSH daemon to start
+    Write-Host "Waiting for active SSH on '${ip}'..."
+    $global:rs.Ssh::WaitForSsh($ip, $true)
 }
-
-# check the DHCP server is available
-[object] $dhcpServer = [Vm]::GetVM([Config]::Vm.Dhcp.Name)
-if (!$dhcpServer -or ![Ssh]::TestSsh([Config]::Vm.Dhcp.Ip)) {
-    Write-Error "Unable to find the DHCP/DNS server, is it running?"
-}
-
-# create the VM
-[Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $false) | Out-Null
-
-# wait for the VM to come up
-Write-Host "Waiting for VM IP address for '${vmName}'..."
-[string] $ip = [Vm]::WaitForIpv4($vmName, $true)
-
-# wait for the SSH daemon to start
-Write-Host "Waiting for active SSH on '${ip}'..."
-[Ssh]::WaitForSsh($ip, $true)
 
 # stop the VM and export it
 Write-Host "Stopping the template VM..."
@@ -46,4 +49,4 @@ Set-Vm -Name $vmName -AutomaticStartAction Nothing
 
 # export the VM to the template path
 Write-Host "Exporting the template VM..."
-[Vm]::Export($vmName, $removeVmTemplate)
+$global:rs.Vm::Export($vmName, $removeVmTemplate)

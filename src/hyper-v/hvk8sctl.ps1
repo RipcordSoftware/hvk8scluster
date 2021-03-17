@@ -13,25 +13,25 @@ $ErrorActionPreference = "Stop"
 . ./scripts/arguments.ps1
 
 if (!$sshPrivateKeyPath) {
-    $sshPrivateKeyPath = [Ssh]::DiscoverPrivateKeyPath([Config]::RepoRoot)
+    $sshPrivateKeyPath = $global:rs.Ssh::DiscoverPrivateKeyPath($global:rs.Config::RepoRoot)
 }
 
 switch ($command) {
     "config" {
-        [object] $options = [Arguments]::GetLongOptions($commandArguments)
+        [object] $options = $global:rs.Arguments::GetLongOptions($commandArguments)
         if ($options.out) {
-            [Cluster]::SaveClusterConfig($options.path, $options.force, [Config]::Vm.Master.Ip, $sshUser, $sshPrivateKeyPath)
+            $global:rs.Cluster::SaveClusterConfig($options.path, $options.force, $global:rs.Config::Vm.Master.Ip, $sshUser, $sshPrivateKeyPath)
         } else {
-            [string] $output = [Cluster]::GetClusterConfig([Config]::Vm.Master.Ip, $sshUser, $sshPrivateKeyPath)
+            [string] $output = $global:rs.Cluster::GetClusterConfig($global:rs.Config::Vm.Master.Ip, $sshUser, $sshPrivateKeyPath)
             Write-Host $output
         }
     }
-    "kubectl" { [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "kubectl ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
-    "kubeadm" { [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "kubeadm ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
-    "helm" { [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "helm ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
-    "calicoctl" { [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "sudo calicoctl ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
-    "ceph" { [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
-    "rados" { [Ssh]::InvokeRemoteCommand([Config]::Vm.Master.Ip, "kubectl -n rook-ceph exec deploy/rook-ceph-tools -- rados ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
+    "kubectl" { $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "kubectl ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
+    "kubeadm" { $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "kubeadm ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
+    "helm" { $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "helm ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
+    "calicoctl" { $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "sudo calicoctl ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
+    "ceph" { $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
+    "rados" { $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "kubectl -n rook-ceph exec deploy/rook-ceph-tools -- rados ${commandArguments}", $sshUser, $sshPrivateKeyPath) }
     "help" {
         Write-Host "hvk8sctl - Hyper-V Kuberenetes Control"
         Write-Host ""

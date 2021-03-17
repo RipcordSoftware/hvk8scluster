@@ -9,7 +9,7 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-[string] $keyDir = [Config]::KeyDir
+[string] $keyDir = $global:rs.Config::KeyDir
 Copy-Item -Path $sshPublicKeyPath -Destination $keyDir -Force | Out-Null
 
 [object] $here = Get-Item -Path $PSScriptRoot

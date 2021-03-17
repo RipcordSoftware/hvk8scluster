@@ -17,28 +17,28 @@ $ErrorActionPreference = "Stop"
 . ./scripts/config.ps1
 . ./scripts/ssh.ps1
 
-if (![Vm]::IsInstalled()) {
+if (!$global:rs.Vm::IsInstalled()) {
     Write-Error "Hyper-V is not installed or the service isn't running, please install manually or using the provided scripts"
 }
 
-if (![Vm]::IsAdministrator()) {
+if (!$global:rs.Vm::IsAdministrator()) {
     Write-Error "You require Administrator rights or membership of the 'Hyper-V Administrator' group"
 }
 
-[string] $isoPath = "$([Config]::IsoDir)/preseed-dhcp-dns-debian-${debianVersion}-amd64-netinst.iso"
+[string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-dhcp-dns-debian-${debianVersion}-amd64-netinst.iso"
 if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '${isoPath}' is missing, please build it before proceeding"
 }
 
-[bool] $created = [Vm]::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
+[bool] $created = $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
 
 if ($created) {
     # if we created a new VM then remove any old host keys
     if ($vmIp) {
-        [Ssh]::RemoveHostKeys($vmIp)
+        $global:rs.Ssh::RemoveHostKeys($vmIp)
     }
 
     # wait for the VM to fully come up
     Write-Host "Waiting for active SSH on '${vmIp}'..."
-    [Ssh]::WaitForSsh($vmIp, $true)
+    $global:rs.Ssh::WaitForSsh($vmIp, $true)
 }
