@@ -19,12 +19,12 @@ if (!$disableGroupAdd) {
     [object] $groupMembers = Get-LocalGroupMember -Name "Hyper-V Administrators"
     [bool] $isMember = $groupMembers | Where-Object { $_.Name -eq $user.Name }
     if (!$isMember) {
-        Add-LocalGroupMember -Group "Hyper-v Administrators" -Member $user.Name
+        Add-LocalGroupMember -Group "Hyper-V Administrators" -Member $user.Name
     }
 }
 
 if (!$disableRestart) {
-    Write-Host "Restarting computer in 10s, press CTRL+C abort..."
+    Write-Host "Restarting computer in 10s, press CTRL+C to abort..."
     Start-Sleep 10
     Restart-Computer -Force
 }

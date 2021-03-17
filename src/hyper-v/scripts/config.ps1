@@ -4,9 +4,13 @@ $ErrorActionPreference = "Stop"
 
 class Config {
     static [string] $RepoRoot = $script:Git::RepoRoot
-    static [string] $BinPath = "$([Config]::RepoRoot)/bin"
-    static [string] $IsoPath = "$([Config]::BinPath)/isos"
-    static [string] $ExportPath = "$([Config]::BinPath)/exports"
+
+    static [string] $BinDir = "$([Config]::RepoRoot)/bin"
+    static [string] $SrcDir = "$([Config]::RepoRoot)/src"
+
+    static [string] $IsoDir = "$([Config]::BinDir)/isos"
+    static [string] $ExportDir = "$([Config]::BinDir)/exports"
+    static [string] $KeyDir = "$([Config]::SrcDir)/keys"
 
     static [object] $Vm = @{
         Gateway = @{ Name = "k8s-gateway"; Ip = "172.31.0.1" }  # the Hyper-V gateway/vswitch, not really a VM

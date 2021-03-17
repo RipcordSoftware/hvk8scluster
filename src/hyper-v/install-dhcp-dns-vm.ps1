@@ -25,7 +25,7 @@ if (![Vm]::IsAdministrator()) {
     Write-Error "You require Administrator rights or membership of the 'Hyper-V Administrator' group"
 }
 
-[string] $isoPath = "$([Config]::IsoPath)/preseed-dhcp-dns-debian-${debianVersion}-amd64-netinst.iso"
+[string] $isoPath = "$([Config]::IsoDir)/preseed-dhcp-dns-debian-${debianVersion}-amd64-netinst.iso"
 if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '${isoPath}' is missing, please build it before proceeding"
 }

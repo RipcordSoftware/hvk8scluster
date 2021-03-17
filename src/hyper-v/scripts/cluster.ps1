@@ -57,6 +57,7 @@ class Cluster {
         [string] $conf = [Cluster]::GetClusterConfig($ip, $user, $privateKeyPath)
 
         if (!$path) {
+            New-Item -Path "~/.kube" -ItemType Directory -Force
             $path = '~/.kube/config'
         }
 

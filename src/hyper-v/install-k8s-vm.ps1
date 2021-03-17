@@ -17,7 +17,7 @@ $ErrorActionPreference = "Stop"
 . ./scripts/config.ps1
 . ./scripts/ssh.ps1
 
-[string] $isoPath = "$([Config]::IsoPath)/preseed-k8s-debian-${debianVersion}-amd64-netinst.iso"
+[string] $isoPath = "$([Config]::IsoDir)/preseed-k8s-debian-${debianVersion}-amd64-netinst.iso"
 if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
 }

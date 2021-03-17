@@ -1,3 +1,5 @@
+#Requires -RunAsAdministrator
+
 param (
     [string] $switchName = "Kubernetes",
     [string] $natName = "${switchName}-nat"

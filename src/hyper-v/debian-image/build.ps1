@@ -1,10 +1,16 @@
 [CmdletBinding(PositionalBinding=$false)]
 param (
     [string] $distro = 'Ubuntu-18.04',
+    [string] $sshPublicKeyPath = "~/.ssh/id_rsa.pub",
     [Parameter(ValueFromRemainingArguments)][string] $commandArguments
 )
 
+. ../scripts/config.ps1
+
 $ErrorActionPreference = "Stop"
+
+[string] $keyDir = [Config]::KeyDir
+Copy-Item -Path $sshPublicKeyPath -Destination $keyDir -Force | Out-Null
 
 [object] $here = Get-Item -Path $PSScriptRoot
 [string] $drive = $here.Root.Name.ToLower()[0]
