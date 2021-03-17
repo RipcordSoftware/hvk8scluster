@@ -1,7 +1,13 @@
 $ErrorActionPreference = "Stop"
 
-class Git {
-    static [string] $RepoRoot = $(git rev-parse --show-toplevel)
+if (!$global:rs) {
+    $global:rs = @{}
 }
 
-[type] $script:Git = &{ return [Git] }
+&{
+    class Git {
+        static [string] $RepoRoot = $(git rev-parse --show-toplevel)
+    }
+
+    $global:rs.Git = &{ return [Git] }
+}
