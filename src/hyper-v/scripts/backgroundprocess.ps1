@@ -35,6 +35,32 @@ if (!$global:rs) {
         }
     }
 
+    class BackgroundProcessInitialVars {
+        static hidden [object] $initialVars = @{}
+
+        static [void] SetInitialVars([object] $vars) {
+            if ($vars -is [System.Management.Automation.InvocationInfo]) {
+                (Get-Command -Name $vars.InvocationName).Parameters.Keys | ForEach-Object {
+                    [object] $var = Get-Variable -Name $_
+                    [BackgroundProcessInitialVars]::initialVars[$var.Name] = $var.Value
+                }
+            } else {
+                [BackgroundProcessInitialVars]::initialVars = $vars
+            }
+        }
+
+        static [string[]] GetInitialVars() {
+            return [BackgroundProcessInitialVars]::initialVars.Keys | ForEach-Object {
+                [object] $value = [BackgroundProcessInitialVars]::initialVars[$_]
+                if ($value -is [string]) {
+                    "`$$($_) = '${value}'"
+                } else {
+                    "`$$($_) = ${value}"
+                }
+            }
+        }
+    }
+
     class BackgroundProcess {
         static [System.ConsoleColor] $errorTextColour = [System.ConsoleColor]::Red
         static [System.ConsoleColor] $infoTextColour = [System.ConsoleColor]::DarkGray
@@ -54,6 +80,14 @@ if (!$global:rs) {
             return $deps
         }
 
+        static [void] SetInitialVars([object] $vars) {
+            [BackgroundProcessInitialVars]::SetInitialVars($vars)
+        }
+
+        static hidden [string[]] GetInitialVars() {
+            return [BackgroundProcessInitialVars]::GetInitialVars()
+        }
+
         static [object] SpinWait([string] $msg, [ScriptBlock] $scriptBlock) {
             return [BackgroundProcess]::SpinWait($msg, $scriptBlock, $null)
         }
@@ -70,11 +104,12 @@ if (!$global:rs) {
                 $ps = [powershell]::Create()
 
                 $ps.AddScript("`$ErrorActionPreference = '${script:ErrorActionPreference}'")
+                $ps.AddScript([BackgroundProcessInitialVars]::GetInitialVars() -join '; ')
                 $ps.AddScript([BackgroundProcess]::GetScriptDependencies($scriptBlock) -join '; ')
                 $ps.AddScript($scriptBlock)
 
                 if ($arguments -is [Array]) {
-                    $arguments | ForEach-Object { $script.AddArgument($_) }
+                    $arguments | ForEach-Object { $ps.AddArgument($_) }
                 } elseif ($arguments -is [Hashtable]) {
                     $ps.AddParameters($arguments)
                 } elseif ($arguments) {
