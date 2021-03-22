@@ -1,6 +1,6 @@
 . "${PSScriptRoot}/../cluster.ps1"
 
-Describe 'Get-Cluster' {
+Describe 'Cluster' {
     BeforeAll {
         $Cluster = $global:rs.Cluster
     }

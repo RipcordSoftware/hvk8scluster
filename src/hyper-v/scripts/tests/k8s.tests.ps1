@@ -1,6 +1,6 @@
 . "${PSScriptRoot}/../k8s.ps1"
 
-Describe 'Get-K8s' {
+Describe 'K8s' {
     BeforeAll {
         $K8s = $global:rs.K8s
     }

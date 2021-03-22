@@ -1,6 +1,6 @@
 . "${PSScriptRoot}/../arguments.ps1"
 
-Describe 'Get-LongOptions' {
+Describe 'Arguments' {
     [object] $rs = $global:rs
 
     It 'Given a null reference, it gets an empty object' {

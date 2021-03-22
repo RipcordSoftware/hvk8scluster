@@ -1,6 +1,6 @@
 . "${PSScriptRoot}/../config.ps1"
 
-Describe 'Get-Config' {
+Describe 'Config' {
     BeforeAll {
         $Config = $global:rs.Config
     }

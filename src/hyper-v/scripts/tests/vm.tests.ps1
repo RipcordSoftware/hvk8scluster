@@ -1,6 +1,6 @@
 . "${PSScriptRoot}/../vm.ps1"
 
-Describe 'Get-Vm' {
+Describe 'Vm' {
     BeforeAll {
         $Vm = $global:rs.Vm
     }

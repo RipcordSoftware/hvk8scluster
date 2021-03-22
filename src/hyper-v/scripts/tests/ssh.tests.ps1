@@ -1,6 +1,6 @@
 . "${PSScriptRoot}/../ssh.ps1"
 
-Describe 'Get-Ssh' {
+Describe 'Ssh' {
     BeforeAll {
         $Ssh = $global:rs.Ssh
         $CopyFileMode = $global:rs.CopyFileMode
