@@ -105,6 +105,9 @@ if (!$global:rs) {
             try {
                 $ps = [powershell]::Create()
 
+                [object] $currentLocation = Get-Location
+                $ps.runspace.SessionStateProxy.Path.SetLocation($currentLocation.Path)
+
                 $ps.AddScript("`$ErrorActionPreference = '${script:ErrorActionPreference}'")
                 $ps.AddScript([BackgroundProcessInitialVars]::GetInitialVars() -join '; ')
                 $ps.AddScript([BackgroundProcess]::GetScriptDependencies($scriptBlock) -join '; ')
