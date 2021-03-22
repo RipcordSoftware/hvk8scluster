@@ -27,7 +27,7 @@ if (!$global:rs) {
         }
 
         static [void] Join([string] $ip, [string] $command, [string] $user, [string] $privateKeyPath) {
-            $global:rs.Ssh::InvokeRemoteCommand($_.ip, "if [ ! -f /etc/kubernetes/kubelet.conf ]; then sudo ${command}; fi", $user, $privateKeyPath)
+            $global:rs.Ssh::InvokeRemoteCommand($ip, "if [ ! -f /etc/kubernetes/kubelet.conf ]; then sudo ${command}; fi", $user, $privateKeyPath)
         }
 
         static [void] InitializeCalico([string] $ip, [string] $user, [string] $privateKeyPath) {
