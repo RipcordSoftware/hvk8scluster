@@ -54,6 +54,8 @@ if (!$global:rs) {
                 [object] $value = [BackgroundProcessInitialVars]::initialVars[$_]
                 if ($value -is [string]) {
                     "`$$($_) = '${value}'"
+                } elseif (($value -is [boolean]) -or ($value -is [switch])) {
+                    "`$$($_) = `$${value}"
                 } else {
                     "`$$($_) = ${value}"
                 }

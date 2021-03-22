@@ -5,6 +5,10 @@ Describe 'BackgroundProcess' {
         $BackgroundProcess = $global:rs.BackgroundProcess
     }
 
+    BeforeEach {
+        $BackgroundProcess::SetInitialVars(@{})
+    }
+
     It 'BackgroundProcess should be in scope' {
         $BackgroundProcess | Should -BeOfType [object]
     }
@@ -29,6 +33,26 @@ Describe 'BackgroundProcess' {
     It 'Given BackgroundProcess type loaded, we can run a task to get a string from initial variables' {
         $BackgroundProcess::SetInitialVars(@{ hello = "world" })
         $BackgroundProcess::SpinWait("Get a string", { $hello }) | Should -BeExactly "world"
+    }
+
+    It 'Given BackgroundProcess type loaded, we can run a task to get a boolean true from initial variables' {
+        $BackgroundProcess::SetInitialVars(@{ enable = $true })
+        $BackgroundProcess::SpinWait("Get a boolean true", { $enable }) | Should -BeExactly $true
+    }
+
+    It 'Given BackgroundProcess type loaded, we can run a task to get a boolean false from initial variables' {
+        $BackgroundProcess::SetInitialVars(@{ enable = $false })
+        $BackgroundProcess::SpinWait("Get a boolean false", { $enable }) | Should -BeExactly $false
+    }
+
+    It 'Given BackgroundProcess type loaded, we can run a task to get a switch true from initial variables' {
+        $BackgroundProcess::SetInitialVars(@{ enable = [switch]$true })
+        $BackgroundProcess::SpinWait("Get a switch true", { $enable }) | Should -BeExactly $true
+    }
+
+    It 'Given BackgroundProcess type loaded, we can run a task to get a switch false from initial variables' {
+        $BackgroundProcess::SetInitialVars(@{ enable = [switch]$false })
+        $BackgroundProcess::SpinWait("Get a switch false", { $enable }) | Should -BeExactly $false
     }
 
     It 'Given BackgroundProcess type loaded, we can run a task to get a write error' {
