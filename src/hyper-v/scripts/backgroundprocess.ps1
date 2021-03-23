@@ -138,7 +138,7 @@ if (!$global:rs) {
 
                 [Console]::SetCursorPosition(0, $cursorTop)
 
-                if ($ps.HadErrors) {
+                if ($ps.Streams.Error.Count -gt 0) {
                     Write-Host $spinChars.fail
                 } else {
                     Write-Host $spinChars.success
@@ -152,9 +152,10 @@ if (!$global:rs) {
                         $ex = $ex.InnerException
                     }
                     throw $ex
+                } finally {
+                    $ps.Streams.Information | ForEach-Object { Write-Host -ForegroundColor $([BackgroundProcess]::infoTextColour) $_ }
                 }
 
-                $ps.Streams.Information | ForEach-Object { Write-Host -ForegroundColor $([BackgroundProcess]::infoTextColour) $_ }
                 $ps.Streams.Error | ForEach-Object { Write-Host -ForegroundColor $([BackgroundProcess]::errorTextColour) $_ }
             } finally {
                 [Console]::CursorVisible = $true

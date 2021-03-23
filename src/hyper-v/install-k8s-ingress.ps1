@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 
 . ./scripts/config.ps1
 . ./scripts/ssh.ps1
+. ./scripts/backgroundprocess.ps1
 
 if (!$sshPrivateKeyPath) {
     $sshPrivateKeyPath = $global:rs.Ssh::DiscoverPrivateKeyPath($global:rs.Config::RepoRoot)
@@ -18,5 +19,10 @@ if (!$ignoreKeyPermissions -and !$global:rs.Ssh::CheckKeyFilePermissions($sshPri
     Write-Error "The permissions on the private key file '$sshPrivateKeyPath' are too open, OpenSSH requires these are limited to the current user only. Alternately specify -ignoreKeyPermissions on the command line."
 }
 
-Write-Host "Installing ingress-nginx..."
-$global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, './remote-commands/install-ingress-nginx-chart.sh', $sshUser, $sshPrivateKeyPath)
+# give the background processes access to the app args
+$global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
+
+# install the chart
+$global:rs.BackgroundProcess::SpinWait("Installing ingress-nginx...", {
+    $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, './remote-commands/install-ingress-nginx-chart.sh', $sshUser, $sshPrivateKeyPath)
+})

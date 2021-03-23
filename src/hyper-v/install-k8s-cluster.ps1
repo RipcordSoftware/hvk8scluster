@@ -20,6 +20,7 @@ $ErrorActionPreference = "Stop"
 . ./scripts/ssh.ps1
 . ./scripts/vm.ps1
 . ./scripts/cluster.ps1
+. ./scripts/backgroundprocess.ps1
 
 if (!$global:rs.Vm::IsInstalled()) {
     Write-Error "Hyper-V is not installed or the service isn't running, please install manually or using the provided scripts"
@@ -55,78 +56,103 @@ if (!$disableVmTemplate -and $vmTemplateName -and !$global:rs.Vm::GetExportedVmC
     Write-Error "Unable to find VM template '${vmTemplateName}', you must create the template file or specify -disableVmTemplate"
 }
 
+# give the background processes access to the app args
+$global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
+
 # check the DHCP server is available
-[object] $dhcpServer = $global:rs.Vm::GetVM($global:rs.Config::Vm.Dhcp.Name)
-if (!$dhcpServer -or !$global:rs.Ssh::TestSsh($global:rs.Config::Vm.Dhcp.Ip)) {
-    Write-Error "Unable to find the DHCP/DNS server, is it running?"
-}
+$global:rs.BackgroundProcess::SpinWait("Checking the DHCP server is available...", {
+    [object] $dhcpServer = $global:rs.Vm::GetVM($rs.Config::Vm.Dhcp.Name)
+    if (!$dhcpServer -or !$global:rs.Ssh::TestSsh($rs.Config::Vm.Dhcp.Ip)) {
+        Write-Error "Unable to find the DHCP/DNS server, is it running?"
+    }
+})
 
 # reset the DHCP server
-Write-Host "Resetting the DHCP server..."
-$global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Dhcp.Ip, './remote-commands/reset-dnsmasq-state.sh', $sshUser, $sshPrivateKeyPath) | Out-Null
+$global:rs.BackgroundProcess::SpinWait("Resetting the DHCP server...", {
+    $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Dhcp.Ip, './remote-commands/reset-dnsmasq-state.sh', $sshUser, $sshPrivateKeyPath) | Out-Null
+})
 
 # provision the VMs on Hyper-V
 if (!$skipVmProvisioning) {
     $cluster | ForEach-Object {
-        [string] $vmName = $_.vmName
+        [object] $vm = $_
+        [string] $vmName = $vm.vmName
         if (!$disableVmTemplate -and $vmTemplateName) {
-            Write-Host "Cloning '${vmTemplateName}' to '${vmName}'..."
-            .\clone-k8s-vm.ps1 `
-                -vmTemplateName $vmTemplateName -vmName $vmName -vmIp $_.ip -vmMemoryMB $_.memoryMB `
-                -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
+            $global:rs.BackgroundProcess::SpinWait("Cloning '${vmTemplateName}' to '${vmName}'...", { param ($vm)
+                .\clone-k8s-vm.ps1 `
+                    -vmTemplateName $vmTemplateName -vmName $vm.vmName -vmIp $vm.ip -vmMemoryMB $vm.memoryMB `
+                    -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
+            }, @{ vm = $vm })
         } else {
-            Write-Host "Creating '${vmName}'..."
-            .\install-k8s-vm.ps1 `
-                -vmName $vmName -vmIp $_.ip -vmMemoryMB $_.memoryMB `
-                -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
+            $global:rs.BackgroundProcess::SpinWait("Creating '${vmName}'...", { param ($vm)
+                .\install-k8s-vm.ps1 `
+                    -vmName $vm.vmName -vmIp $vm.ip -vmMemoryMB $vm.memoryMB `
+                    -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
+            }, @{ vm = $vm })
         }
     }
 
     # configure the VM networking
     $cluster | ForEach-Object {
-        [string] $vmName = $_.vmName
+        [object] $vm = $_
+        [string] $vmName = $vm.vmName
         [string] $ip = $null
 
-        Write-Host "Waiting for VM IP address for '${vmName}'..."
-        while (!$ip) {
-            $ip = $global:rs.Vm::WaitForIpv4($vmName, $true)
-
-            if ($ip) {
-                Write-Host "Waiting for active SSH on '${ip}'..."
-                $global:rs.Ssh::WaitForSsh($ip, $true)
-
-                Write-Host "Discovered '${vmName}' on '${ip}'"
-                $global:rs.Cluster::SetHostName($ip, $_.hostname, $sshUser, $sshPrivateKeyPath)
+        [string] $ip = $global:rs.BackgroundProcess::SpinWait("Waiting for VM IP address for '${vmName}'...", { param ($vm)
+            [string] $ip = $null
+            while (!$ip) {
+                $ip = $global:rs.Vm::WaitForIpv4($vm.vmName, $false)
             }
+            return $ip
+        }, @{ vm = $vm })
+
+        if ($ip) {
+            $global:rs.BackgroundProcess::SpinWait("Waiting for active SSH on '${ip}'...", { param ($ip)
+                $global:rs.Ssh::WaitForSsh($ip, $false)
+            }, @{ ip = $ip })
+
+            $global:rs.BackgroundProcess::SpinWait("Discovered '${vmName}' on '${ip}'", { param ($vm, $ip)
+                $global:rs.Cluster::SetHostName($ip, $vm.hostname, $sshUser, $sshPrivateKeyPath)
+            }, @{ vm = $vm; ip = $ip})
         }
     }
 }
 
 # initialize the master
 $cluster | Where-Object { !$_.node } | ForEach-Object {
-    Write-Host "Waiting for active SSH on '$($_.ip)'..."
-    $global:rs.Ssh::WaitForSsh($_.ip, $true)
+    [object] $vm = $_
 
-    Write-Host "Initializing cluster master '$($_.hostname)'..."
-    $global:rs.Cluster::InitializeMaster($_.ip, $sshUser, $sshPrivateKeyPath)
-    $global:rs.Cluster::InitializeCalico($_.ip, $sshUser, $sshPrivateKeyPath)
+    $global:rs.BackgroundProcess::SpinWait("Waiting for active SSH on '$($vm.ip)'...", { param ($vm)
+        $global:rs.Ssh::WaitForSsh($vm.ip, $false)
+    }, @{ vm = $vm })
+
+    $global:rs.BackgroundProcess::SpinWait("Initializing cluster master '$($vm.hostname)'...", { param ($vm)
+        $global:rs.Cluster::InitializeMaster($vm.ip, $sshUser, $sshPrivateKeyPath)
+        $global:rs.Cluster::InitializeCalico($vm.ip, $sshUser, $sshPrivateKeyPath)
+    }, @{ vm = $vm })
 }
 
 # get the cluster join command
 [string] $masterIp = $cluster | Where-Object { !$_.node } | ForEach-Object { $_.ip } | Select-Object -First 1
-[string] $joinCommand = $global:rs.Cluster::GetJoinCommand($masterIp, $sshUser, $sshPrivateKeyPath)
-Write-Host "Got join command: $joinCommand"
+[string] $joinCommand = $global:rs.BackgroundProcess::SpinWait("Get cluster join command...", { param ($ip)
+    return $global:rs.Cluster::GetJoinCommand($ip, $sshUser, $sshPrivateKeyPath)
+}, @{ ip = $masterIp})
 
 # initialize the nodes
 $cluster | Where-Object { $_.node } | ForEach-Object {
-    Write-Host "Waiting for active SSH on '$($_.ip)'..."
-    $global:rs.Ssh::WaitForSsh($_.ip, $true)
+    [object] $vm = $_
 
-    Write-Host "Node '$($_.hostname)' is requesting to join the cluster..."
-    $global:rs.Cluster::Join($_.ip, $joinCommand, $sshUser, $sshPrivateKeyPath)
+    $global:rs.BackgroundProcess::SpinWait("Waiting for active SSH on '$($vm.ip)'...", { param ($vm)
+        $global:rs.Ssh::WaitForSsh($vm.ip, $false)
+    }, @{ vm = $vm })
+
+    $global:rs.BackgroundProcess::SpinWait("Node '$($vm.hostname)' is requesting to join the cluster...", { param ($vm, $joinCommand)
+        $global:rs.Cluster::Join($vm.ip, $joinCommand, $sshUser, $sshPrivateKeyPath)
+    }, @{ vm = $vm; joinCommand = $joinCommand })
 }
 
 if (!$skipLbProvisioning) {
-    Write-Host "Installing bitnami-metallb..."
-    $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, './remote-commands/install-bitnami-metallb-chart.sh', $sshUser, $sshPrivateKeyPath)
+    $global:rs.BackgroundProcess::SpinWait("Installing bitnami-metallb...", {
+        $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, './remote-commands/install-bitnami-metallb-chart.sh', $sshUser, $sshPrivateKeyPath)
+    })
 }

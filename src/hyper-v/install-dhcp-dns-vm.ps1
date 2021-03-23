@@ -16,6 +16,7 @@ $ErrorActionPreference = "Stop"
 . ./scripts/vm.ps1
 . ./scripts/config.ps1
 . ./scripts/ssh.ps1
+. ./scripts/backgroundprocess.ps1
 
 if (!$global:rs.Vm::IsInstalled()) {
     Write-Error "Hyper-V is not installed or the service isn't running, please install manually or using the provided scripts"
@@ -30,7 +31,12 @@ if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '${isoPath}' is missing, please build it before proceeding"
 }
 
-[bool] $created = $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
+# give the background processes access to the app args
+$global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
+
+[bool] $created = [bool]$global:rs.BackgroundProcess::SpinWait("Creating the virtual machine...", { param ($isoPath)
+    return $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
+}, @{ isoPath = $isoPath })
 
 if ($created) {
     # if we created a new VM then remove any old host keys
@@ -39,6 +45,7 @@ if ($created) {
     }
 
     # wait for the VM to fully come up
-    Write-Host "Waiting for active SSH on '${vmIp}'..."
-    $global:rs.Ssh::WaitForSsh($vmIp, $true)
+    $global:rs.BackgroundProcess::SpinWait("Waiting for active SSH on '${vmIp}'...", { param ($vmIp)
+        $global:rs.Ssh::WaitForSsh($vmIp, $false)
+    }, @{ vmIp = $vmIp })
 }
