@@ -53,6 +53,5 @@ if (!$global:rs) {
         }
     }
 
-    $global:rs.ArgumentOption = &{ return [ArgumentOption] }
     $global:rs.Arguments = &{ return [Arguments] }
 }
