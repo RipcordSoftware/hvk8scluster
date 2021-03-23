@@ -12,13 +12,13 @@ param (
 $ErrorActionPreference = "Stop"
 
 . ./scripts/vm.ps1
-. ./scripts/config.ps1
+. ./scripts/ssh.ps1
 
-[object] $vm = [Vm]::GetVm($vmName)
+[object] $vm = $global:rs.Vm::GetVm($vmName)
 
 if ($vm -and !$updateVm) {
     if ($removeVm) {
-        [Vm]::Remove($vmName)
+        $global:rs.Vm::Remove($vmName)
         $vm = $null
     } else {
         Write-Error "The VM '${vmName}' already exists and neither removeVm or updateVm has been specified"
@@ -28,23 +28,23 @@ if ($vm -and !$updateVm) {
 [bool] $createdVm = $false
 if (!$vm) {
     Write-Host "Removing the old VHD..."
-    [Vm]::RemoveVhd($vmName)
+    $global:rs.Vm::RemoveVhd($vmName)
 
     # import the VM
     Write-Host "Importing the template..."
-    $vm = [Vm]::Import($vmTemplateName, $vmName)
+    $vm = $global:rs.Vm::Import($vmTemplateName, $vmName)
 
     $createdVm = $true
 }
 
 # update the CPU cores and memory
 Write-Host "Updating the cloned VM..."
-[Vm]::Update($vmName, $vmCpuCount, $vmMemoryMB)
+$global:rs.Vm::Update($vmName, $vmCpuCount, $vmMemoryMB)
 
 if ($createdVm) {
     # remove any old host keys
     if ($vmIp) {
-        [Ssh]::RemoveHostKeys($vmIp)
+        $global:rs.Ssh::RemoveHostKeys($vmIp)
     }
 
     Write-Host "Starting the cloned VM..."
