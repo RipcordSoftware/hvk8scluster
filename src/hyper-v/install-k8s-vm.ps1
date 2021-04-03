@@ -1,5 +1,5 @@
 param (
-    [string] $vmName = "k8s-unknown",
+    [string] $vmName = "hvk8s-unknown",
     [string] $vmIp,
     [int] $vmCpuCount = 2,
     [int] $vmMemoryMB = 1024,
@@ -17,7 +17,7 @@ $ErrorActionPreference = "Stop"
 . ./scripts/config.ps1
 . ./scripts/ssh.ps1
 
-[string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-k8s-debian-${debianVersion}-amd64-netinst.iso"
+[string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-hvk8s-debian-${debianVersion}-amd64-netinst.iso"
 if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
 }

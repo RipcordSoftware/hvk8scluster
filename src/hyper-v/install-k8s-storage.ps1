@@ -2,7 +2,7 @@ param (
     [string] $sshUser = "hvk8s",
     [string] $sshPrivateKeyPath,
     [int] $vmStorageDiskSizeGB = 100,
-    [string] $nodeRegEx = '^k8s-node[0-9]+$',
+    [string] $nodeRegEx = '^hvk8s-node[0-9]+$',
     [switch] $ignoreKeyPermissions
 )
 

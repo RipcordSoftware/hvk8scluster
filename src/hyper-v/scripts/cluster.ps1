@@ -45,8 +45,8 @@ if (!$global:rs) {
         static [void] SetHostName([string] $ip, [string] $hostName, [string] $user, [string] $privateKeyPath) {
             [string] $command =
                 'if [ "$(hostname)" != ' + "'${hostName}' ]; then " +
-                " sudo sed -i 's/k8s-unknown/${hostName}/g' /etc/hosts && " +
-                " sudo sed -i 's/k8s-unknown/${hostName}/g' /etc/hostname && " +
+                " sudo sed -i 's/hvk8s-unknown/${hostName}/g' /etc/hosts && " +
+                " sudo sed -i 's/hvk8s-unknown/${hostName}/g' /etc/hostname && " +
                 " sudo rm -f /var/lib/dhcp/*.leases && " +
                 " sudo systemctl reboot --no-block; " +
                 "fi"

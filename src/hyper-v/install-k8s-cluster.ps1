@@ -2,7 +2,7 @@ param (
     [int] $nodeCount = 3,
     [int] $nodeMemoryMB = 4096,
     [int] $masterMemoryMB = 2048,
-    [string] $vmTemplateName = 'k8s-template',
+    [string] $vmTemplateName = 'hvk8s-template',
     [string] $sshUser = "hvk8s",
     [string] $sshPrivateKeyPath,
     [switch] $removeVhd,
@@ -35,14 +35,14 @@ if (!$sshPrivateKeyPath) {
 }
 
 # define the cluster
-[object] $master = @{ vmName = "k8s-master"; hostname = "k8s-master"; ip = $global:rs.Config::Vm.Master.Ip; node = $false; memoryMB = $masterMemoryMB }
+[object] $master = @{ vmName = "hvk8s-master"; hostname = "hvk8s-master"; ip = $global:rs.Config::Vm.Master.Ip; node = $false; memoryMB = $masterMemoryMB }
 [object] $cluster = @( $master )
 
 if ($nodeCount -gt 0) {
     $cluster += @(1 .. $nodeCount) | ForEach-Object {
         [int] $nodeId = $_
         [string] $hostIp = $global:rs.Config::Vm.Master.Ip -replace '[0-9]$',"${nodeId}"
-        @{ vmName = "k8s-node${nodeId}"; hostname = "k8s-node${nodeId}"; ip = ${hostIp}; node = $true; memoryMB = $nodeMemoryMB }
+        @{ vmName = "hvk8s-node${nodeId}"; hostname = "hvk8s-node${nodeId}"; ip = ${hostIp}; node = $true; memoryMB = $nodeMemoryMB }
     }
 }
 

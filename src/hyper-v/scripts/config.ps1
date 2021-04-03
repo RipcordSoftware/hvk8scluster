@@ -18,9 +18,9 @@ if (!$global:rs) {
         static [string] $KeyDir = "$([Config]::SrcDir)/keys"
 
         static [object] $Vm = @{
-            Gateway = @{ Name = "k8s-gateway"; Ip = "172.31.0.1" }  # the Hyper-V gateway/vswitch, not really a VM
-            Dhcp = @{ Name = "k8s-dhcp-dns"; Ip = "172.31.0.2" }
-            Master = @{ Name = "k8s-master"; Ip = "172.31.0.10" }
+            Gateway = @{ Name = "hvk8s-gateway"; Ip = "172.31.0.1" }  # the Hyper-V gateway/vswitch, not really a VM
+            Dhcp = @{ Name = "hvk8s-dhcp-dns"; Ip = "172.31.0.2" }
+            Master = @{ Name = "hvk8s-master"; Ip = "172.31.0.10" }
         }
     }
 
