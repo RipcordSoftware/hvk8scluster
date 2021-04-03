@@ -15,7 +15,7 @@ if (!$global:rs) {
         static [object] $defaultSshArgs = @("-q", "-o", "StrictHostKeyChecking=no")
 
         static [void] RemoveHostKeys([string[]] $keys) {
-            [string[]] $knownHosts = Get-Content -Path "~/.ssh/known_hosts"
+            [string[]] $knownHosts = Get-Content -Path "~/.ssh/known_hosts" -ErrorAction SilentlyContinue
             $knownHosts | Where-Object {
                 [string[]] $parts = $_ -split ' '
                 return !$parts -or ($keys -notcontains $parts[0])
