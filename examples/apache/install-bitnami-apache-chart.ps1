@@ -5,7 +5,6 @@
 # - a running cluster with MetalLB
 # - a running cluster with ingress
 # - helm.exe
-# - kubectl.exe (to recover the password)
 # - updateHosts requires Administrator mode
 
 param (
