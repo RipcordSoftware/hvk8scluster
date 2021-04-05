@@ -1,5 +1,5 @@
 param (
-    [string] $vmName = "k8s-dhcp-dns",
+    [string] $vmName = "hvk8s-dhcp-dns",
     [string] $vmIp = "172.31.0.2",
     [int] $vmCpuCount = 2,
     [int64] $vmMemoryMB = 768,

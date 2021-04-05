@@ -1,5 +1,5 @@
 param (
-    [string] $vmName = "k8s-template",
+    [string] $vmName = "hvk8s-template",
     [int] $vmCpuCount = 2,
     [int] $vmMemoryMB = 768,
     [int] $vmDiskSizeGB = 40,
@@ -23,7 +23,7 @@ $global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
 
 if (!$skipVmProvisioning) {
     # check the preseed image is available
-    [string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-k8s-debian-${debianVersion}-amd64-netinst.iso"
+    [string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-hvk8s-debian-${debianVersion}-amd64-netinst.iso"
     if (!(Test-Path $isoPath)) {
         Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
     }

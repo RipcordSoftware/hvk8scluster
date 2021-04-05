@@ -1,6 +1,6 @@
 param (
-    [string] $vmTemplateName = "k8s-template",
-    [string] $vmName = "k8s-unknown",
+    [string] $vmTemplateName = "hvk8s-template",
+    [string] $vmName = "hvk8s-unknown",
     [string] $vmIp,
     [int] $vmCpuCount = 2,
     [int] $vmMemoryMB = 1024,
