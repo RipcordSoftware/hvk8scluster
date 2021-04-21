@@ -42,6 +42,14 @@ if (!$global:rs) {
             $global:rs.Ssh::InvokeRemoteCommand($ip, $command, $user, $privateKeyPath)
         }
 
+        static [void] InitializeFlannel([string] $ip, [string] $user, [string] $privateKeyPath) {
+            [string] $command =
+                'wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml -O kube-flannel.yml && ' +
+                "sed -i 's/10.244.0.0/172.30.0.0/' kube-flannel.yml && " +
+                'kubectl apply -f kube-flannel.yml'
+            $global:rs.Ssh::InvokeRemoteCommand($ip, $command, $user, $privateKeyPath)
+        }
+
         static [void] SetHostName([string] $ip, [string] $hostName, [string] $user, [string] $privateKeyPath) {
             [string] $command =
                 'if [ "$(hostname)" != ' + "'${hostName}' ]; then " +
