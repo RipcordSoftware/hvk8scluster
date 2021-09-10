@@ -9,4 +9,4 @@ mkdir -p /tmp/
 chmod 777 /tmp/
 
 apt-get update && \
-apt-get install -y xorriso genisoimage
+apt-get install -y xorriso genisoimage p7zip-full mtools
