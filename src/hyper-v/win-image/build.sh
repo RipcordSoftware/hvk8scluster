@@ -65,7 +65,7 @@ fi
 
 # TODO: prepare the autounattend file for Core under Hyper-V
 #cp -f autounattend.xml "${ISOFILES_TMP_ROOT}"
-#cp -f CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
+cp -f CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
 
 xorriso -as mkisofs -o "${ISOFILES_OUT_ROOT}/${WIN_ISO}" -iso-level 3 -V UEFI "${ISOFILES_TMP_ROOT}" "${EFIFILE}" -e /efi.img -no-emul-boot
 if [ $? -ne 0 ]; then
