@@ -130,5 +130,15 @@
             </OfflineUserAccounts>
         </component>
     </settings>
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>100</Order>
+                    <Path>powershell.exe -executionpolicy unrestricted -command &quot;Get-Volume | ? { ($_.DriveType -eq &apos;CD-ROM&apos;) -and $_.DriveLetter } | % { $_.DriveLetter + &apos;:\rs&apos; } | ? { Test-Path $_ } | % { Copy-Item -Path $_ -Destination $pwd.Drive.Root -Recurse -Force }&quot;</Path>
+                </RunSynchronousCommand>
+            </RunSynchronous>
+        </component>
+    </settings>
     <cpi:offlineImage cpi:source="wim:c:/users/craig/downloads/en_windows_server_version_20h2_updated_march_2021_x64_dvd_0ccc98b9/sources/install.wim#Windows Server SERVERSTANDARDACORE" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
 </unattend>
