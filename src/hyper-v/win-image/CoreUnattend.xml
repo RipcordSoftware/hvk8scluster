@@ -137,6 +137,10 @@
                     <Order>100</Order>
                     <Path>powershell.exe -executionpolicy unrestricted -command &quot;Get-Volume | ? { ($_.DriveType -eq &apos;CD-ROM&apos;) -and $_.DriveLetter } | % { $_.DriveLetter + &apos;:\rs&apos; } | ? { Test-Path $_ } | % { Copy-Item -Path $_ -Destination $pwd.Drive.Root -Recurse -Force }&quot;</Path>
                 </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>101</Order>
+                    <Path>powershell.exe -File \rs\Set_Shell.ps1</Path>
+                </RunSynchronousCommand>
             </RunSynchronous>
         </component>
     </settings>
