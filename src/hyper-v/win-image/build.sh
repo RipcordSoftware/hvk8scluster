@@ -59,13 +59,10 @@ if [ $? -ne 0 ]; then
     exit 8
 fi
 
-# TODO: do we need this?
-# # remove the key prompt
-# rm -f "${ISOFILES_TMP_ROOT}/boot/bootfix.bin"
-
-# TODO: prepare the autounattend file for Core under Hyper-V
-#cp -f autounattend.xml "${ISOFILES_TMP_ROOT}"
 cp -f CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
+
+mkdir -p "${ISOFILES_TMP_ROOT}"'/rs/'
+cp -fr ./rs/ "${ISOFILES_TMP_ROOT}"
 
 xorriso -as mkisofs -o "${ISOFILES_OUT_ROOT}/${WIN_ISO}" -iso-level 3 -V UEFI "${ISOFILES_TMP_ROOT}" "${EFIFILE}" -e /efi.img -no-emul-boot
 if [ $? -ne 0 ]; then

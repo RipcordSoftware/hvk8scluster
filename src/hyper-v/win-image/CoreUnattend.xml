@@ -4,8 +4,13 @@
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <OOBE>
                 <HideEULAPage>true</HideEULAPage>
+                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+                <ProtectYourPC>3</ProtectYourPC>
+                <HideLocalAccountScreen>true</HideLocalAccountScreen>
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
             </OOBE>
-            <TimeZone>Coordinated Universal Time</TimeZone>
+            <TimeZone>UTC</TimeZone>
             <UserAccounts>
                 <LocalAccounts>
                     <LocalAccount wcm:action="add">
@@ -135,11 +140,23 @@
             <RunSynchronous>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>100</Order>
-                    <Path>powershell.exe -executionpolicy unrestricted -command &quot;Get-Volume | ? { ($_.DriveType -eq &apos;CD-ROM&apos;) -and $_.DriveLetter } | % { $_.DriveLetter + &apos;:\rs&apos; } | ? { Test-Path $_ } | % { Copy-Item -Path $_ -Destination $pwd.Drive.Root -Recurse -Force }&quot;</Path>
+                    <Path>powershell.exe -command &quot;Get-Volume | ? { ($_.DriveType -eq &apos;CD-ROM&apos;) -and $_.DriveLetter } | % { $_.DriveLetter + &apos;:\rs&apos; } | ? { Test-Path $_ } | % { Copy-Item -Path $_ -Destination $pwd.Drive.Root -Recurse -Force }&quot;</Path>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
-                    <Order>101</Order>
+                    <Order>110</Order>
                     <Path>powershell.exe -File \rs\Set_Shell.ps1</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>powershell.exe -noprofile -command set-executionpolicy bypass -force</Path>
+                    <Order>1</Order>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>powershell.exe -File \rs\SetupComplete_AddScript.ps1 \rs\Install_OpenSSH.ps1</Path>
+                    <Order>400</Order>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>410</Order>
+                    <Path>powershell.exe -File \rs\SetupComplete_AddScript.ps1 \rs\Install_Docker.ps1 -reboot</Path>
                 </RunSynchronousCommand>
             </RunSynchronous>
         </component>
