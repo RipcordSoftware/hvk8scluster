@@ -64,7 +64,7 @@ cp -f CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
 mkdir -p "${ISOFILES_TMP_ROOT}"'/rs/'
 cp -fr ./rs/ "${ISOFILES_TMP_ROOT}"
 
-xorriso -as mkisofs -o "${ISOFILES_OUT_ROOT}/${WIN_ISO}" -iso-level 3 -V UEFI "${ISOFILES_TMP_ROOT}" "${EFIFILE}" -e /efi.img -no-emul-boot
+xorriso -as mkisofs -o "${ISOFILES_OUT_ROOT}/${WIN_ISO}" -iso-level 3 -V UEFI "${ISOFILES_TMP_ROOT}" "${EFIFILE}" -e /efi.img -no-emul-boot -joliet -joliet-long
 if [ $? -ne 0 ]; then
     echo "Error: unable to create the bootable ISO file"
     exit 9
