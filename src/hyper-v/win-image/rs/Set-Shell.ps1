@@ -1,3 +1,5 @@
+#Requires -RunAsAdministrator
+
 $ErrorActionPreference = 'Stop'
 
 Write-Host 'Setting the default shell...'
