@@ -7,7 +7,7 @@ param (
 $ErrorActionPreference = 'Stop'
 
 try {
-    [object] $serviceInstalled = !!(Get-Service | Where-Object { $_.name -eq 'docker' })
+    [bool] $serviceInstalled = !!(Get-Service | Where-Object { $_.name -eq 'docker' })
 
     if (!$serviceInstalled) {
         Install-PackageProvider -Name NuGet -Force
