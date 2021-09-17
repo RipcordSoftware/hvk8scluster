@@ -16,8 +16,17 @@ if (Test-Path $powershellCorePath) {
     $powershell = $powershellCorePath
 }
 
-& $nssmPath install $serviceName $powershell -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -NoExit -OutputFormat Text -File $scriptPath $scriptArgs
-if (!$?) {
+[object] $argumentList = @(
+    'install', $serviceName, """$powershell""",
+    '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Unrestricted', '-NoExit', '-OutputFormat', 'Text', '-File', $scriptPath
+)
+
+if ($scriptArgs) {
+    $argumentList += $scriptArgs
+}
+
+[object] $p = Start-Process -Wait -NoNewWindow -FilePath $nssmPath -ArgumentList $argumentList -PassThru
+if (!$p -or $p.ExitCode -ne 0) {
     Write-Error "Nssm failed to install the service '${serviceName}'"
 }
 

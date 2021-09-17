@@ -160,7 +160,11 @@
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>420</Order>
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 install-docker \rs\Install-Docker.ps1 -reboot</Path>
+                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 install-docker \rs\Install-Docker.ps1</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>500</Order>
+                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 restart-computer \rs\Restart-Computer.ps1 @\rs\Restart-Computer.json</Path>
                 </RunSynchronousCommand>
             </RunSynchronous>
         </component>

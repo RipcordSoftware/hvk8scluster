@@ -1,0 +1,4 @@
+{
+    "serviceNames": ["sshd", "docker"],
+    "paths": ["$env:SystemDrive\\Program Files\\PowerShell\\7\\pwsh.exe"]
+}
