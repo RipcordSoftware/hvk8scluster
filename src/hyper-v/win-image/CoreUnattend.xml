@@ -151,28 +151,23 @@
                     <Order>1</Order>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
-                    <Path>powershell.exe -File \rs\SetupComplete-AddScript.ps1 \rs\Install-OpenSSH.ps1 \rs\id_rsa.pub</Path>
-                    <Order>410</Order>
+                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-OpenSSH.ps1 \rs\id_rsa.pub -startService</Path>
+                    <Order>430</Order>
                     <Description>Install OpenSSH Server</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>400</Order>
-                    <Path>powershell.exe -File \rs\SetupComplete-AddScript.ps1 \rs\Install-PowerShellCore.ps1</Path>
+                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-PowerShellCore.ps1</Path>
                     <Description>Install Powershell Core</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
-                    <Order>420</Order>
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 install-docker \rs\Install-Docker.ps1</Path>
+                    <Order>410</Order>
+                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-Docker.ps1 -reboot</Path>
                     <Description>Install Docker</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
-                    <Order>500</Order>
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 restart-computer \rs\Restart-Computer.ps1 @\rs\Restart-Computer.json</Path>
-                    <Description>Restart the computer based on trigger conditions</Description>
-                </RunSynchronousCommand>
-                <RunSynchronousCommand wcm:action="add">
-                    <Order>430</Order>
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 install-k8s-components \rs\Install-K8s-Components.ps1</Path>
+                    <Order>420</Order>
+                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-K8s-Components.ps1</Path>
                     <Description>Install basic K8s components</Description>
                 </RunSynchronousCommand>
             </RunSynchronous>

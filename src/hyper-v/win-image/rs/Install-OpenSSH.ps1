@@ -9,9 +9,8 @@ param (
 
 $ErrorActionPreference = 'Stop'
 
-[object] $serviceInstalled = !!(Get-Service | Where-Object { $_.name -eq 'sshd' })
-
-if (!$serviceInstalled) {
+[object] $service = Get-Service -Name 'sshd' -ErrorAction Ignore
+if (!$service) {
     Write-Host 'Install OpenSSH.Server...'
     Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
 

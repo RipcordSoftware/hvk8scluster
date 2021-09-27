@@ -12,7 +12,7 @@ $ProgressPreference = 'SilentlyContinue'
 # wait for docker to start
 [bool] $running = $false
 while (!$running) {
-    [object] $service = Get-Service | Where-Object { $_.name -eq 'docker' }
+    [object] $service = Get-Service -Name 'docker' -ErrorAction Ignore
     $running = $service -and ($service.Status -eq 'Running')
     if (!$running) {
         Start-Sleep -Seconds $interval

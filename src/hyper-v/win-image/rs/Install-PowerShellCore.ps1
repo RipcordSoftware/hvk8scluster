@@ -1,5 +1,12 @@
 #Requires -RunAsAdministrator
 
+param (
+    [string] $powerShellVersion = '7.1.4'
+)
+
 $ErrorActionPreference = 'Stop'
 
-Start-Process -Wait 'msiexec.exe' -ArgumentList @('/i', "${PSScriptRoot}\bin\PowerShell-7.1.4-win-x64.msi", '/passive', '/norestart')
+[string] $powershellCorePath = "${env:SystemDrive}\Program Files\PowerShell\7\pwsh.exe"
+if (!(Test-Path $powershellCorePath)) {
+    Start-Process -Wait 'msiexec.exe' -ArgumentList @('/i', "${PSScriptRoot}\bin\PowerShell-${powerShellVersion}-win-x64.msi", '/passive', '/norestart')
+}

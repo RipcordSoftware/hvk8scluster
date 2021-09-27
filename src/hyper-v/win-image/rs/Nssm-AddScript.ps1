@@ -1,9 +1,8 @@
 #Requires -RunAsAdministrator
 
 param (
-    [Parameter(Mandatory)][string] $serviceName,
-    [Parameter(Mandatory)][string] $scriptPath,
-    [Parameter(ValueFromRemainingArguments=$true)][string[]] $scriptArgs
+    [Parameter(Mandatory)][string] $command,
+    [Parameter(ValueFromRemainingArguments=$true)][string[]] $arguments
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,18 +15,17 @@ if (Test-Path $powershellCorePath) {
     $powershell = $powershellCorePath
 }
 
-[object] $argumentList = @(
-    'install', $serviceName, """$powershell""",
-    '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Unrestricted', '-NoExit', '-OutputFormat', 'Text', '-File', $scriptPath
-)
+[object] $service = Get-Service -Name 'install-scripts' -ErrorAction Ignore
+if (!$service) {
+    &$nssmPath install install-scripts """$powershell""" -NoProfile -NonInteractive -ExecutionPolicy Unrestricted `
+        -NoExit -OutputFormat Text -File """${PSScriptRoot}\Nssm.ps1"""
 
-if ($scriptArgs) {
-    $argumentList += $scriptArgs
+    if (!$?) {
+        Write-Error "Nssm failed to install the service 'install-scripts'"
+    }
 }
 
-[object] $p = Start-Process -Wait -NoNewWindow -FilePath $nssmPath -ArgumentList $argumentList -PassThru
-if (!$p -or $p.ExitCode -ne 0) {
-    Write-Error "Nssm failed to install the service '${serviceName}'"
-}
+[object] $script = @{ command = $command; arguments = $arguments }
 
-Set-Service $serviceName -StartupType Automatic
+# append the script to the scripts file
+$script | ConvertTo-Json -Compress | Out-File "${PSScriptRoot}\Nssm.dat" -Append -Force -Encoding ascii

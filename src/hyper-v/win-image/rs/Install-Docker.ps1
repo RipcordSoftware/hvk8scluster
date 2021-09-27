@@ -7,9 +7,8 @@ param (
 $ErrorActionPreference = 'Stop'
 
 try {
-    [bool] $serviceInstalled = !!(Get-Service | Where-Object { $_.name -eq 'docker' })
-
-    if (!$serviceInstalled) {
+    [object] $service = Get-Service -Name 'docker' -ErrorAction Ignore
+    if (!$service) {
         Install-PackageProvider -Name NuGet -Force
         Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
         Install-Package -Name Docker -ProviderName DockerMsftProvider -Force

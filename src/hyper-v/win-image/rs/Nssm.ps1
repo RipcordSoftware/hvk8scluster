@@ -2,9 +2,9 @@
 
 $ErrorActionPreference = 'Stop'
 
-[object] $scripts = Get-Content "${PSScriptRoot}\SetupComplete.dat"
-[string] $stdout = "${PSScriptRoot}\SetupComplete.stdout.log"
-[string] $stderr = "${PSScriptRoot}\SetupComplete.stderr.log"
+[object] $scripts = Get-Content "${PSScriptRoot}\Nssm.dat"
+[string] $stdout = "${PSScriptRoot}\Nssm.stdout.log"
+[string] $stderr = "${PSScriptRoot}\Nssm.stderr.log"
 
 # use pwsh if available
 [string] $powershell = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
