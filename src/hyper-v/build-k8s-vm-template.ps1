@@ -13,10 +13,10 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. ./scripts/vm.ps1
-. ./scripts/config.ps1
-. ./scripts/ssh.ps1
-. ./scripts/backgroundprocess.ps1
+. "${PSScriptRoot}/scripts/vm.ps1"
+. "${PSScriptRoot}/scripts/config.ps1"
+. "${PSScriptRoot}/scripts/ssh.ps1"
+. "${PSScriptRoot}/scripts/backgroundprocess.ps1"
 
 # give the background processes access to the app args
 $global:rs.BackgroundProcess::SetInitialVars($MyInvocation)

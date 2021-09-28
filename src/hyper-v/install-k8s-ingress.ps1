@@ -6,9 +6,9 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. ./scripts/config.ps1
-. ./scripts/ssh.ps1
-. ./scripts/backgroundprocess.ps1
+. "${PSScriptRoot}/scripts/config.ps1"
+. "${PSScriptRoot}/scripts/ssh.ps1"
+. "${PSScriptRoot}/scripts/backgroundprocess.ps1"
 
 if (!$sshPrivateKeyPath) {
     $sshPrivateKeyPath = $global:rs.Ssh::DiscoverPrivateKeyPath($global:rs.Config::RepoRoot)

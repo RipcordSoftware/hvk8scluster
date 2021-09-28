@@ -13,9 +13,9 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. ./scripts/vm.ps1
-. ./scripts/config.ps1
-. ./scripts/ssh.ps1
+. "${PSScriptRoot}/scripts/vm.ps1"
+. "${PSScriptRoot}/scripts/config.ps1"
+. "${PSScriptRoot}/scripts/ssh.ps1"
 
 [string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-hvk8s-debian-${debianVersion}-amd64-netinst.iso"
 if (!(Test-Path $isoPath)) {
