@@ -141,6 +141,7 @@
                 <RunSynchronousCommand wcm:action="add">
                     <Order>100</Order>
                     <Path>powershell.exe -command &quot;Get-Volume | ? { ($_.DriveType -eq &apos;CD-ROM&apos;) -and $_.DriveLetter } | % { $_.DriveLetter + &apos;:\rs&apos; } | ? { Test-Path $_ } | % { Copy-Item -Path $_ -Destination $pwd.Drive.Root -Recurse -Force }&quot;</Path>
+                    <Description>Copy the \rs directory</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>110</Order>
@@ -151,23 +152,23 @@
                     <Order>1</Order>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-OpenSSH.ps1 \rs\id_rsa.pub -startService</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-OpenSSH.ps1 \rs\id_rsa.pub -startService</Path>
                     <Order>430</Order>
                     <Description>Install OpenSSH Server</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>400</Order>
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-PowerShellCore.ps1</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-PowerShellCore.ps1</Path>
                     <Description>Install Powershell Core</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>410</Order>
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-Docker.ps1 -reboot</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-Docker.ps1 -reboot</Path>
                     <Description>Install Docker</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>420</Order>
-                    <Path>powershell.exe -File \rs\Nssm-AddScript.ps1 \rs\Install-K8s-Components.ps1</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-K8s-Components.ps1</Path>
                     <Description>Install basic K8s components</Description>
                 </RunSynchronousCommand>
             </RunSynchronous>

@@ -7,17 +7,17 @@ param (
 
 $ErrorActionPreference = 'Stop'
 
-[string] $nssmPath = "${PSScriptRoot}\bin\nssm-2.24-101-g897c7ad\win64\nssm.exe"
+[string] $nssmPath = "${PSScriptRoot}\..\bin\nssm-2.24-101-g897c7ad\win64\nssm.exe"
 
-[string] $powershell = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
-[string] $powershellCorePath = "$env:SystemDrive\Program Files\PowerShell\7\pwsh.exe"
+[string] $powershell = "${env:SystemRoot}\System32\WindowsPowerShell\v1.0\powershell.exe"
+[string] $powershellCorePath = "${env:SystemDrive}\Program Files\PowerShell\7\pwsh.exe"
 if (Test-Path $powershellCorePath) {
     $powershell = $powershellCorePath
 }
 
 [object] $service = Get-Service -Name 'install-scripts' -ErrorAction Ignore
 if (!$service) {
-    &$nssmPath install install-scripts """$powershell""" -NoProfile -NonInteractive -ExecutionPolicy Unrestricted `
+    &$nssmPath install install-scripts """${powershell}""" -NoProfile -NonInteractive -ExecutionPolicy Unrestricted `
         -NoExit -OutputFormat Text -File """${PSScriptRoot}\Nssm.ps1"""
 
     if (!$?) {

@@ -6,7 +6,7 @@ param (
 $ErrorActionPreference = 'Stop'
 
 # create the setup\scripts dir
-[string] $scriptsDir = "$env:SystemRoot\Setup\Scripts"
+[string] $scriptsDir = "${env:SystemRoot}\Setup\Scripts"
 if (!(Test-Path $scriptsDir)) {
     New-Item $scriptsDir -ItemType Directory -Force
 }
