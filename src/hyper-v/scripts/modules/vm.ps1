@@ -147,6 +147,17 @@ if (!$global:rs) {
             }
         }
 
+        static [void] EjectIsoMedia([string] $vmName) {
+            [object] $controller = Get-VMScsiController -VMName $vmName
+            if ($controller) {
+                $controller.Drives |
+                    Where-Object { $_.DvdMediaType } |
+                    ForEach-Object {
+                        Set-VMDvdDrive -VMName $vmName -ControllerNumber $_.ControllerNumber -ControllerLocation $_.ControllerLocation -Path $null
+                    }
+            }
+        }
+
         static [object] Export([string] $vmName, [bool] $remove) {
             [string] $exportPath = "$($global:rs.Config::ExportDir)/${vmName}"
             if ($remove -and (Test-Path -Path $exportPath)) {
