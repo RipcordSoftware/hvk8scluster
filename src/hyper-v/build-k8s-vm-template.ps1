@@ -13,10 +13,10 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. "${PSScriptRoot}/scripts/vm.ps1"
-. "${PSScriptRoot}/scripts/config.ps1"
-. "${PSScriptRoot}/scripts/ssh.ps1"
-. "${PSScriptRoot}/scripts/backgroundprocess.ps1"
+. "${PSScriptRoot}/scripts/modules/vm.ps1"
+. "${PSScriptRoot}/scripts/hvk8s/config.ps1"
+. "${PSScriptRoot}/scripts/modules/ssh.ps1"
+. "${PSScriptRoot}/scripts/modules/backgroundprocess.ps1"
 
 # give the background processes access to the app args
 $global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
@@ -59,6 +59,7 @@ $global:rs.BackgroundProcess::SpinWait("Stopping the template VM...", {
 
 # export the VM to the template path
 $global:rs.BackgroundProcess::SpinWait("Exporting the template VM...", {
+    $global:rs.Vm::EjectIsoMedia($vmName)
     $global:rs.Vm::Export($vmName, $removeVmTemplate)
 })
 

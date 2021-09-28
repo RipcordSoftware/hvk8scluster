@@ -11,8 +11,8 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. "${PSScriptRoot}/scripts/vm.ps1"
-. "${PSScriptRoot}/scripts/ssh.ps1"
+. "${PSScriptRoot}/scripts/modules/vm.ps1"
+. "${PSScriptRoot}/scripts/modules/ssh.ps1"
 
 [object] $vm = $global:rs.Vm::GetVm($vmName)
 

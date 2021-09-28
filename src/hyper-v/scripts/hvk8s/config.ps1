@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-. "${PSScriptRoot}/git.ps1"
+. "${PSScriptRoot}/../modules/git.ps1"
 
 if (!$global:rs) {
     $global:rs = @{}

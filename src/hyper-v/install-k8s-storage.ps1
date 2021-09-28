@@ -8,11 +8,11 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. "${PSScriptRoot}/scripts/config.ps1"
-. "${PSScriptRoot}/scripts/ssh.ps1"
-. "${PSScriptRoot}/scripts/vm.ps1"
-. "${PSScriptRoot}/scripts/k8s.ps1"
-. "${PSScriptRoot}/scripts/backgroundprocess.ps1"
+. "${PSScriptRoot}/scripts/hvk8s/config.ps1"
+. "${PSScriptRoot}/scripts/modules/ssh.ps1"
+. "${PSScriptRoot}/scripts/modules/vm.ps1"
+. "${PSScriptRoot}/scripts/modules/k8s.ps1"
+. "${PSScriptRoot}/scripts/modules/backgroundprocess.ps1"
 
 if (!$global:rs.Vm::IsInstalled()) {
     Write-Error "Hyper-V is not installed or the service isn't running, please install manually or using the provided scripts"
