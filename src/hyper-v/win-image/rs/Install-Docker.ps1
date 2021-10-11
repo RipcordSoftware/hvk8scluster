@@ -1,7 +1,8 @@
 #Requires -RunAsAdministrator
 
 param (
-    [switch] $reboot
+    [switch] $reboot,
+    [string] $dockerVersion = '19.03.18'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,7 +12,7 @@ try {
     if (!$service) {
         Install-PackageProvider -Name NuGet -Force
         Install-Module -Name DockerMsftProvider -Repository PSGallery -Force
-        Install-Package -Name Docker -ProviderName DockerMsftProvider -Force
+        Install-Package -Name Docker -ProviderName DockerMsftProvider -Force -RequiredVersion $dockerVersion
 
         if ($reboot) {
             Restart-Computer -Force
