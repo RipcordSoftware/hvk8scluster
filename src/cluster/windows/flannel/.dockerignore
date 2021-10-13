@@ -1,0 +1,3 @@
+.gitignore
+build.ps1
+setup.go
