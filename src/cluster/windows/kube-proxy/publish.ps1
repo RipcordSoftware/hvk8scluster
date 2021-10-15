@@ -3,7 +3,7 @@ param (
     [Parameter(Mandatory)][string] $username,
     [Parameter(Mandatory)][string] $password,
     [string] $repository = 'ripcordsoftware',
-    [string] $image = 'flannel',
+    [string] $image = 'kube-proxy',
     [string] $localTag = 'local',
     [string] $tag = 'windowsservercore-20h2'
 )
