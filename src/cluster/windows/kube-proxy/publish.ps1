@@ -5,7 +5,7 @@ param (
     [string] $repository = 'ripcordsoftware',
     [string] $image = 'kube-proxy',
     [string] $localTag = 'local',
-    [string] $tag = 'windowsservercore-20h2'
+    [string] $tag = 'nanoserver-20h2'
 )
 
 $ErrorActionPreference = 'Stop'

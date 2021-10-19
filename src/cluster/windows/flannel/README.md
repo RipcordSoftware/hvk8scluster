@@ -1,4 +1,4 @@
-# Flannel for Windows Server Core 2019 (20h2)
+# Flannel for Nanoserver (20h2)
 
 ## Why?
 Windows container images require a close match to the host operating system. The [sig-windows-tools][1] [flannel][2] image
@@ -11,8 +11,6 @@ which is required by `flanneld.exe`.
 
 ## Usage
 Build the image with `build.ps1` and publish with `publish.ps1`.
-
-> NB. the base Windows Server image is large, pulling this image is slow.
 
 ## Credits
 [sig-windows-tools][1] for:
