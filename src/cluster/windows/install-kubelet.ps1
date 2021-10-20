@@ -14,11 +14,11 @@ $ProgressPreference = 'SilentlyContinue'
 
 [object] $tasks = @(
     @{
-        installFunc = {
+        install = {
             Write-Host "Creating the Kubernetes directory at '${kubernetesPath}'..."
             $null = New-Item -Path $kubernetesPath -ItemType Directory -Force
         }
-        removeFunc = {
+        remove = {
             if (Test-Path $kubernetesPath) {
                 Write-Host "Removing the Kubernetes directory at '${kubernetesPath}'..."
                 Remove-Item -Path $kubernetesPath -Force -Recurse
@@ -30,7 +30,7 @@ $ProgressPreference = 'SilentlyContinue'
     @{ download = @{ uri = "https://github.com/rancher/wins/releases/download/v${rancherWinsVersion}/wins.exe"; file = "wins-${rancherWinsVersion}.exe"; targetDir = "$kubernetesPath/wins.exe" } }
     @{ download = @{ uri = 'https://k8stestinfrabinaries.blob.core.windows.net/nssm-mirror/nssm-2.24.zip'; file = 'nssm-2.24.zip'; targetDir = $null } }
     @{
-        installFunc = {
+        install = {
             # install the host docker network
             [object] $networks = (docker network ls --format '{{json .}}') | ConvertFrom-Json
             if (!$?) {
@@ -47,7 +47,7 @@ $ProgressPreference = 'SilentlyContinue'
         }
     }
     @{
-        installFunc = {
+        install = {
             # install rancher-wins
             if (!(Get-Service -Name 'rancher-wins' -ErrorAction Ignore)) {
                 Write-Host 'Registering wins service...'
@@ -59,7 +59,7 @@ $ProgressPreference = 'SilentlyContinue'
             Write-Host 'Starting the wins service...'
             Start-Service 'rancher-wins'
         }
-        removeFunc = {
+        remove = {
             # remove rancher-wins
             if (!!(Get-Service -Name 'rancher-wins' -ErrorAction Ignore)) {
                 Write-Host 'Removing wins service...'
@@ -69,7 +69,7 @@ $ProgressPreference = 'SilentlyContinue'
         }
     }
     @{
-        installFunc = {
+        install = {
             # create well known directories
             @(
                 @{ path = "${env:SystemDrive}/var/log/kubelet"; link = $null }
@@ -88,7 +88,7 @@ $ProgressPreference = 'SilentlyContinue'
                 }
             }
         }
-        removeFunc = {
+        remove = {
             @("${env:SystemDrive}/var", "${env:SystemDrive}/etc") | ForEach-Object {
                 if (Test-Path $_) {
                     Write-Host "Removing directory '$($_)'..."
@@ -98,14 +98,14 @@ $ProgressPreference = 'SilentlyContinue'
         }
     }
     @{
-        installFunc = {
+        install = {
             # add a firewall rule for the kubelet
             if (!(Get-NetFirewallRule -Name 'kubelet' -ErrorAction Ignore)) {
                 Write-Host 'Creating the firewall rule for the kubelet...'
                 New-NetFirewallRule -Name kubelet -DisplayName 'kubelet' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 10250
             }
         }
-        removeFunc = {
+        remove = {
             # remove the firewall rule for the kubelet
             if (!!(Get-NetFirewallRule -Name 'kubelet' -ErrorAction Ignore)) {
                 Write-Host 'Removing the firewall rule for the kubelet...'
@@ -114,7 +114,8 @@ $ProgressPreference = 'SilentlyContinue'
         }
     }
     @{
-        installFunc = {
+        # TODO: install a service with NSSM
+        install = {
             # run kubelet from the console
             Write-Host "Running kubelet..."
 
@@ -164,14 +165,14 @@ if (!$remove) {
                 Copy-Item -Path $filePath -Destination $targetDir -Force
             }
         }
-        if ($_.installFunc) {
-            &$_.installFunc
+        if ($_.install) {
+            &$_.install
         }
     }
 } else {
     $tasks | Sort-Object -Descending { (++$script:i) } | ForEach-Object {
-        if ($_.removeFunc) {
-            &$_.removeFunc
+        if ($_.remove) {
+            &$_.remove
         }
     }
 }
