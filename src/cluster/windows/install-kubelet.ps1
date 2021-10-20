@@ -156,6 +156,7 @@ if (!$remove) {
 
             if (!(Test-Path $filePath)) {
                 Write-Host "Downloading '${file}' to '${downloadPath}'..."
+                New-Item -Path $downloadPath -ItemType Directory -Force
                 Invoke-WebRequest -UseBasicParsing -Uri $_.download.uri -OutFile $filePath
             }
 
