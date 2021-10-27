@@ -1,7 +1,7 @@
 #Requires -RunAsAdministrator
 
 param (
-    [string] $powerShellVersion = '7.1.4'
+    [string] $powerShellVersion = '7.1.5'
 )
 
 $ErrorActionPreference = 'Stop'
