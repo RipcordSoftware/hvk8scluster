@@ -1,21 +1,21 @@
 param (
-    [string] $vmName = "hvk8s-template",
+    [string] $vmName = "hvk8s-win-template",
     [int] $vmCpuCount = 2,
-    [int] $vmMemoryMB = 768,
+    [int] $vmMemoryMB = 1024,
     [int] $vmDiskSizeGB = 40,
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
     [switch] $skipVmProvisioning,
     [switch] $removeVmTemplate,
-    [string] $debianVersion = "10.8.0"
+    [string] $winVersion = '20h2_updated_march_2021_x64_dvd_0ccc98b9'
 )
 
 $ErrorActionPreference = "Stop"
 
 . "${PSScriptRoot}/scripts/hvk8s/config.ps1"
 
-[string] $isoPath = "$($global:rs.Config::IsoDir)/preseed-hvk8s-debian-${debianVersion}-amd64-netinst.iso"
+[string] $isoPath = "$($global:rs.Config::IsoDir)/en_windows_server_version_${winVersion}.iso"
 
 [object] $scriptArgs = @{}
 $MyInvocation.MyCommand.Parameters.Keys |

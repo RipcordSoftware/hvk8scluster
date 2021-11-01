@@ -13,6 +13,7 @@ $ErrorActionPreference = "Stop"
 
 . "${PSScriptRoot}/scripts/modules/vm.ps1"
 . "${PSScriptRoot}/scripts/modules/ssh.ps1"
+. "${PSScriptRoot}/scripts/hvk8s/config.ps1"
 
 [object] $vm = $global:rs.Vm::GetVm($vmName)
 
@@ -32,7 +33,7 @@ if (!$vm) {
 
     # import the VM
     Write-Host "Importing the template..."
-    $vm = $global:rs.Vm::Import($vmTemplateName, $vmName)
+    $vm = $global:rs.Vm::Import($global:rs.Config::ExportDir, $vmTemplateName, $vmName)
 
     $createdVm = $true
 }

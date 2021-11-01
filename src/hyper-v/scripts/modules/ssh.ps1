@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 
 if (!$global:rs) {
     $global:rs = @{}
+    $global:rs.__modules = @()
 }
 
 &{
@@ -49,9 +50,17 @@ if (!$global:rs) {
         }
 
         static [string] InvokeRemoteCommand([string] $ip, [string] $command, [string] $user, [string] $privateKeyPath) {
+            return [Ssh]::InvokeRemoteCommand($ip, $command, $user, $privateKeyPath, $false)
+        }
+
+        static [string] InvokeRemoteCommand([string] $ip, [string] $command, [string] $user, [string] $privateKeyPath, [bool] $encode) {
             if (($command -match '^[a-zA-Z0-9/\\_\-. ]*$') -and (Test-Path -Path $command -PathType leaf)) {
                 [Ssh]::CopyFile($ip, $command, "/tmp/", $user, $privateKeyPath, [CopyFileMode]::IncludeSourcePath -bor [CopyFileMode]::SetExecutable)
                 $command = "/tmp/${command}"
+            } elseif ($encode) {
+                [object] $commandBytes = [Text.ASCIIEncoding]::new().GetBytes($command)
+                $command = [Convert]::ToBase64String($commandBytes)
+                $command = "echo " + $command + " | base64 -d | sh"
             }
 
             [object] $sshArgs = [Ssh]::defaultSshArgs + @("-i", $privateKeyPath, "-l", $user, $ip, $command)
@@ -66,7 +75,7 @@ if (!$global:rs) {
         static [void] WaitForSsh([string] $ip, [bool] $echoConsole) {
             [int] $echoTicks = 0
             while (![Ssh]::TestSsh($ip)) {
-                Start-Sleep -Seconds 10
+                Start-Sleep -Seconds 5
                 if ($echoConsole) {
                     Write-Host -NoNewline "."
                     $echoTicks++
@@ -119,4 +128,8 @@ if (!$global:rs) {
 
     $global:rs.CopyFileMode = &{ return [CopyFileMode] }
     $global:rs.Ssh = &{ return [Ssh] }
+
+    if ($global:rs.__modules -notcontains $PSCommandPath) {
+        $global:rs.__modules += $PSCommandPath
+    }
 }

@@ -5,7 +5,7 @@ param (
     [Parameter(ValueFromRemainingArguments)][string] $commandArguments
 )
 
-. ../scripts/config.ps1
+. "${PSScriptRoot}/../scripts/hvk8s/config.ps1"
 
 $ErrorActionPreference = "Stop"
 

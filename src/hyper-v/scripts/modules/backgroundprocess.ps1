@@ -2,6 +2,7 @@ $script:ErrorActionPreference = 'Stop'
 
 if (!$global:rs) {
     $global:rs = @{}
+    $global:rs.__modules = @()
 }
 
 &{
@@ -40,10 +41,12 @@ if (!$global:rs) {
 
         static [void] SetInitialVars([object] $vars) {
             if ($vars -is [System.Management.Automation.InvocationInfo]) {
-                (Get-Command -Name $vars.InvocationName).Parameters.Keys | ForEach-Object {
-                    [object] $var = Get-Variable -Name $_
-                    [BackgroundProcessInitialVars]::initialVars[$var.Name] = $var.Value
-                }
+                $vars.MyCommand.Parameters.Keys |
+                    Where-Object { [System.Management.Automation.PSCmdlet]::CommonParameters -notcontains $_ } |
+                    ForEach-Object {
+                        [object] $var = Get-Variable -Name $_
+                        [BackgroundProcessInitialVars]::initialVars[$var.Name] = $var.Value
+                    }
             } else {
                 [BackgroundProcessInitialVars]::initialVars = $vars
             }
@@ -74,7 +77,9 @@ if (!$global:rs) {
             if ($m) {
                 [object] $scripts = $m | ForEach-Object { $_.Groups['script'].Value } | Sort-Object -Unique
                 $deps = $scripts | ForEach-Object {
-                        "${PSScriptRoot}\$($_).ps1"
+                        [string] $script = $_
+                        [string] $scriptFile = "${script}.ps1"
+                        $global:rs.__modules | Where-Object { $_.EndsWith($scriptFile, [StringComparison]::OrdinalIgnoreCase) } | Select-Object -First 1
                     } | Where-Object {
                         Test-Path $_
                     } | ForEach-Object { ". `"$($_)`"" }
@@ -171,4 +176,8 @@ if (!$global:rs) {
     }
 
     $global:rs.BackgroundProcess = &{ return [BackgroundProcess] }
+
+    if ($global:rs.__modules -notcontains $PSCommandPath) {
+        $global:rs.__modules += $PSCommandPath
+    }
 }

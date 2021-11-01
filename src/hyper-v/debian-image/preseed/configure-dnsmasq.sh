@@ -30,4 +30,5 @@ echo -e \
 "dhcp-host=hvk8s-node16,172.31.0.26,infinite\n"\
 "dhcp-host=hvk8s-node17,172.31.0.27,infinite\n"\
 "dhcp-host=hvk8s-node18,172.31.0.28,infinite\n"\
-"dhcp-host=hvk8s-node19,172.31.0.29,infinite" >> /etc/dnsmasq.conf
+"dhcp-host=hvk8s-node19,172.31.0.29,infinite\n"\
+"dhcp-host=hvk8s-node20,172.31.0.30,infinite" >> /etc/dnsmasq.conf

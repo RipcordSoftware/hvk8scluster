@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 
 if (!$global:rs) {
     $global:rs = @{}
+    $global:rs.__modules = @()
 }
 
 &{
@@ -54,4 +55,8 @@ if (!$global:rs) {
     }
 
     $global:rs.Arguments = &{ return [Arguments] }
+
+    if ($global:rs.__modules -notcontains $PSCommandPath) {
+        $global:rs.__modules += $PSCommandPath
+    }
 }

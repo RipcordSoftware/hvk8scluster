@@ -22,18 +22,16 @@ if [ ! -f "$PUBKEY_FILE" ]; then
     fi
 fi
 
-# TODO: restore
-# if [ -d "$ISOFILES_TMP_ROOT" ]; then
-#   chmod -R 700 "$ISOFILES_TMP_ROOT"
-#   rm -rf "$ISOFILES_TMP_ROOT"
-# fi
+if [ -d "$ISOFILES_TMP_ROOT" ]; then
+  chmod -R 700 "$ISOFILES_TMP_ROOT"
+  rm -rf "$ISOFILES_TMP_ROOT"
+fi
 
-# TODO: restore
-# 7z x "${REPO_ROOT}/src/iso/${WIN_ISO}" "-o${ISOFILES_TMP_ROOT}"
-# if [ $? -ne 0 ]; then
-#     echo "Error: unable to extract the source ISO"
-#     exit 4
-# fi
+7z x "${REPO_ROOT}/src/iso/${WIN_ISO}" "-o${ISOFILES_TMP_ROOT}"
+if [ $? -ne 0 ]; then
+    echo "Error: unable to extract the source ISO"
+    exit 4
+fi
 
 dd if=/dev/zero "of=${EFIFILE}" count=32 bs=1M
 if [ $? -ne 0 ]; then
