@@ -14,7 +14,7 @@ param (
     [switch] $skipLbProvisioning,
     [switch] $ignoreKeyPermissions,
     [switch] $disableVmTemplate,
-    [switch] $flannel
+    [switch] $calico
 )
 
 $ErrorActionPreference = "Stop"
@@ -145,10 +145,10 @@ $cluster | Where-Object { !$_.node } | ForEach-Object {
     $global:rs.BackgroundProcess::SpinWait("Initializing cluster master '$($vm.hostname)'...", { param ($vm)
         $global:rs.Cluster::InitializeMaster($vm.ip, $sshUser, $sshPrivateKeyPath)
 
-        if ($flannel) {
-            $global:rs.Cluster::InitializeFlannel($vm.ip, $sshUser, $sshPrivateKeyPath)
-        } else {
+        if ($calico) {
             $global:rs.Cluster::InitializeCalico($vm.ip, $sshUser, $sshPrivateKeyPath)
+        } else {
+            $global:rs.Cluster::InitializeFlannel($vm.ip, $sshUser, $sshPrivateKeyPath)
         }
 
     }, @{ vm = $vm })
