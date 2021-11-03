@@ -31,8 +31,7 @@ if (!$global:rs) {
             [string] $command = if (!$nodeIsWindows) {
                 "if [ ! -f /etc/kubernetes/kubelet.conf ]; then sudo ${joinCommand}; fi"
             } else {
-                # TODO: detect if the node is already joined
-                $joinCommand
+                "if (!(Test-Path /etc/kubernetes/kubelet.conf)) { $joinCommand }"
             }
             $global:rs.Ssh::InvokeRemoteCommand($ip, $command, $user, $privateKeyPath)
         }
