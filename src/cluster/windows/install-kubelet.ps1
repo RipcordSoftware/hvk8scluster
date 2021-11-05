@@ -49,20 +49,32 @@ $ProgressPreference = 'SilentlyContinue'
     @{ download = @{ uri = "https://github.com/rancher/wins/releases/download/v${rancherWinsVersion}/wins.exe"; file = "wins-${rancherWinsVersion}.exe"; targetDir = "${kubernetesPath}/wins.exe" } }
     @{ download = @{ uri = "https://k8stestinfrabinaries.blob.core.windows.net/nssm-mirror/nssm-${nssmVersion}.zip"; file = "nssm-${nssmVersion}.zip"; targetDir = $nssmInstallDirectory } }
     @{ download = @{ uri = 'https://raw.githubusercontent.com/RipcordSoftware/hvk8scluster/main/src/cluster/windows/install-kubelet-service.ps1'; file = 'install-kubelet-service.ps1'; downloadDir = $PSScriptRoot } }
+    @{ download = @{ uri = 'https://raw.githubusercontent.com/RipcordSoftware/hvk8scluster/main/src/cluster/windows/install-docker-host-network-service.ps1'; file = 'install-docker-host-network-service.ps1'; downloadDir = $PSScriptRoot } }
     @{ download = @{ uri = 'https://raw.githubusercontent.com/RipcordSoftware/hvk8scluster/main/src/cluster/windows/nssm.ps1'; file = 'nssm.ps1'; downloadDir = $PSScriptRoot } }
     @{
         install = {
-            # install the host docker network
-            [object] $networks = (docker network ls --format '{{json .}}') | ConvertFrom-Json
-            if (!$?) {
-                Write-Error 'Unable to get the list of networks from the docker daemon'
-            }
+            . "$PSScriptRoot/nssm.ps1"
+            $global:rs.Nssm::nssmExePath = $nssmExePath
 
-            if (!($networks | Where-Object { $_.Name -eq 'host'})) {
-                Write-Host 'Creating the docker host network...'
-                docker network create -d nat host
-                if (!$?) {
-                    Write-Error 'Failed to create the docker host network'
+            # add the install-docker-host-network-service
+            @('install-docker-host-network-service') | ForEach-Object {
+                if (!$global:rs.Nssm::Exists($_)) {
+                    Write-Host "Installing the '$($_)' service..."
+                    $global:rs.Nssm::InstallScript($_, "${PSScriptRoot}\$($_).ps1", @(), $false)
+
+                    &$nssmExePath set $_ DependOnService docker
+                    Start-Service $_
+                }
+            }
+        }
+        uninstall = {
+            . "$PSScriptRoot/nssm.ps1"
+
+            # remove the 'install-docker-host-network-service' service
+            @('install-docker-host-network-service') | ForEach-Object {
+                if ($global:rs.Nssm::Exists($_)) {
+                    Write-Host "Removing '$($_)' service..."
+                    $global:rs.Nssm::Uninstall($_)
                 }
             }
         }
@@ -86,17 +98,17 @@ $ProgressPreference = 'SilentlyContinue'
                 Write-Host 'Removing wins service...'
                 Stop-Service 'rancher-wins'
                 sc.exe delete 'rancher-wins'
+            }
 
-                if ($force) {
-                    Stop-Process -Name "rancher-wins-kube-proxy" -Force -ErrorAction Ignore
-                    Stop-Process -Name "rancher-wins-flanned" -Force -ErrorAction Ignore
-                }
+            if ($force) {
+                Stop-Process -Name "rancher-wins-kube-proxy" -Force -ErrorAction Ignore
+                Stop-Process -Name "rancher-wins-flanneld" -Force -ErrorAction Ignore
             }
         }
     }
     @{
         install = {
-            # create well known directories
+            # create the well known directories
             @(
                 @{ path = "${env:SystemDrive}/var/log/kubelet"; link = $null }
                 @{ path = "${env:SystemDrive}/var/lib/kubelet/etc/kubernetes"; link = $null }
@@ -115,6 +127,7 @@ $ProgressPreference = 'SilentlyContinue'
             }
         }
         uninstall = {
+            # remove the well known directories
             @("${env:SystemDrive}/var", "${env:SystemDrive}/etc") | ForEach-Object {
                 if (Test-Path $_) {
                     Write-Host "Removing directory '$($_)'..."

@@ -13,7 +13,6 @@ $global:rs.Nssm::nssmExePath = $nssmExePath
 
 if (!$global:rs.Nssm::Exists($kubeletServiceName)) {
     Write-Host "Waiting for kubeadm..."
-
     [string] $kubeadmFlagsPath = "${env:SystemDrive}/var/lib/kubelet/kubeadm-flags.env"
     while (!(Test-Path $kubeadmFlagsPath)) {
         Write-Host '.'
@@ -22,7 +21,7 @@ if (!$global:rs.Nssm::Exists($kubeletServiceName)) {
 
     [string] $fileContent = Get-Content -Path $kubeadmFlagsPath
     [object] $kubeletArgs = $fileContent -replace '^KUBELET_KUBEADM_ARGS="' -replace '\s*"$' -split ' --' |
-        ForEach-Object { if ($_ -notmatch '^--') { "--$($_)" } else { $_ } }
+        ForEach-Object { if ($_ -notmatch '^--') { '--' + $_ } else { $_ } }
 
     $global:rs.Nssm::Install(
         $kubeletServiceName,
@@ -46,6 +45,7 @@ if (!$global:rs.Nssm::Exists($kubeletServiceName)) {
         $false)
 
     &$nssmExePath set $kubeletServiceName DependOnService docker
+    &$nssmExePath set $kubeletServiceName DependOnService install-docker-host-network-service
 
     Start-Service $kubeletServiceName
 }
