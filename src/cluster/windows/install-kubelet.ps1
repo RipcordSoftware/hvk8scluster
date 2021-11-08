@@ -56,14 +56,39 @@ $ProgressPreference = 'SilentlyContinue'
             . "$PSScriptRoot/nssm.ps1"
             $global:rs.Nssm::nssmExePath = $nssmExePath
 
+            # add the ipconfig-release-restart service
+            if (!$global:rs.Nssm::Exists('ipconfig-release-restart')) {
+                Write-Host "Installing the 'ipconfig-release-restart' service..."
+                $global:rs.Nssm::InstallInlineScript(
+                    'ipconfig-release-restart',
+                    "Start-Sleep -Seconds 10; ipconfig /release; Restart-Computer -Force",
+                    @(),
+                    $global:rs.NssmServiceOptions::ManualStart -bor $global:rs.NssmServiceOptions::ExitNoRestart)
+            }
+        }
+        uninstall = {
+            . "$PSScriptRoot/nssm.ps1"
+
+            # remove the ipconfig-release-restart service
+            @('ipconfig-release-restart') | ForEach-Object {
+                if ($global:rs.Nssm::Exists($_)) {
+                    Write-Host "Removing '$($_)' service..."
+                    $global:rs.Nssm::Uninstall($_)
+                }
+            }
+        }
+    }
+    @{
+        install = {
+            . "$PSScriptRoot/nssm.ps1"
+            $global:rs.Nssm::nssmExePath = $nssmExePath
+
             # add the install-docker-host-network-service
             @('install-docker-host-network-service') | ForEach-Object {
                 if (!$global:rs.Nssm::Exists($_)) {
                     Write-Host "Installing the '$($_)' service..."
-                    $global:rs.Nssm::InstallScript($_, "${PSScriptRoot}\$($_).ps1", @(), $false)
-
-                    &$nssmExePath set $_ DependOnService docker
-                    Start-Service $_
+                    $global:rs.Nssm::InstallScript($_, "${PSScriptRoot}\$($_).ps1", @(), @('docker'),
+                        $global:rs.NssmServiceOptions::Start -bor $global:rs.NssmServiceOptions::ExitNoRestart)
                 }
             }
         }
@@ -159,12 +184,13 @@ $ProgressPreference = 'SilentlyContinue'
 
             # add the install-kubelet-service
             if (!$global:rs.Nssm::Exists('install-kubelet-service')) {
-                Write-Host "Installing the 'install-kubelet-service'..."
+                Write-Host "Installing the 'install-kubelet-service' service..."
                 $global:rs.Nssm::InstallScript(
                     'install-kubelet-service',
                     "${PSScriptRoot}\install-kubelet-service.ps1",
                     @('-kubernetesPath', $kubernetesPath, '-nssmExePath', $nssmExePath),
-                    $true)
+                    @(),
+                    $global:rs.NssmServiceOptions::Start -bor $global:rs.NssmServiceOptions::ExitNoRestart)
             }
         }
         uninstall = {
