@@ -42,10 +42,9 @@ if (!$global:rs.Nssm::Exists($kubeletServiceName)) {
             '--logtostderr=false'
             '--image-pull-progress-deadline=20m'
         ),
-        $false)
-
-    &$nssmExePath set $kubeletServiceName DependOnService docker
-    &$nssmExePath set $kubeletServiceName DependOnService install-docker-host-network-service
-
-    Start-Service $kubeletServiceName
+        @('docker', 'install-docker-host-network-service'),
+        $global:rs.NssmServiceOptions::Start -bor $global:rs.NssmServiceOptions::ExitRestart)
 }
+
+# make sure we run for at least 10s (required for nssm)
+Start-Sleep -Seconds 10

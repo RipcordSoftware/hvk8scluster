@@ -15,3 +15,6 @@ if (!($networks | Where-Object { $_.Name -eq 'host'})) {
         Write-Error 'Failed to create the docker host network'
     }
 }
+
+# make sure we run for at least 10s (required for nssm)
+Start-Sleep -Seconds 10
