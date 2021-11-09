@@ -35,36 +35,44 @@ fi
 
 dd if=/dev/zero "of=${EFIFILE}" count=32 bs=1M
 if [ $? -ne 0 ]; then
-    echo "Error: unable to create the EFI image file"
+    echo "Error: unable to create the EFI image"
     exit 5
 fi
 
 echo 'label: dos' | sfdisk "${EFIFILE}"
 if [ $? -ne 0 ]; then
-    echo "Error: unable to partition the EFI image file"
+    echo "Error: unable to partition the EFI image"
     exit 6
 fi
 
 mkfs.vfat "${EFIFILE}"
 if [ $? -ne 0 ]; then
-    echo "Error: unable to format the EFI image file"
+    echo "Error: unable to format the EFI image"
     exit 7
 fi
 
 mcopy -s -i "${EFIFILE}" "${ISOFILES_TMP_ROOT}/efi/" ::
 if [ $? -ne 0 ]; then
-    echo "Error: unable to copy the EFI boot files to the EFI image file"
+    echo "Error: unable to copy the EFI boot files to the EFI image"
     exit 8
 fi
 
-cp -f Unattend/CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
+cp -f CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
+if [ $? -ne 0 ]; then
+    echo "Error: unable to copy the Unattend.xml file to the EFI image"
+    exit 9
+fi
 
-mkdir -p "${ISOFILES_TMP_ROOT}"'/rs/'
-cp -fr ./rs/ "${ISOFILES_TMP_ROOT}"
+mkdir -p "${ISOFILES_TMP_ROOT}"'/rs/' && \
+cp -fr ./rs/ "${ISOFILES_TMP_ROOT}" && \
 cp -f "${PUBKEY_FILE}" "${ISOFILES_TMP_ROOT}"'/rs/'
+if [ $? -ne 0 ]; then
+    echo "Error: unable to copy the rs files to the EFI image"
+    exit 10
+fi
 
 xorriso -as mkisofs -o "${ISOFILES_OUT_ROOT}/${WIN_ISO}" -iso-level 3 -V UEFI "${ISOFILES_TMP_ROOT}" "${EFIFILE}" -e /efi.img -no-emul-boot -joliet -joliet-long
 if [ $? -ne 0 ]; then
     echo "Error: unable to create the bootable ISO file"
-    exit 9
+    exit 11
 fi
