@@ -6,8 +6,7 @@ param (
     [string] $nssmVersion = '2.24',
     [string] $downloadDir = "${env:USERPROFILE}/Downloads",
     [string] $kubernetesPath = "${env:SystemDrive}/k",
-    [string] $nssmInstallDirectory = $env:ProgramFiles,
-    [string] $nssmExePath = "${env:ProgramFiles}\nssm-${nssmVersion}\win64\nssm.exe",
+    [string] $nssmExePath = "${env:ProgramFiles}\nssm-${nssmVersion}\nssm.exe",
     [switch] $uninstall,
     [switch] $force
 )
@@ -45,9 +44,8 @@ $ProgressPreference = 'SilentlyContinue'
         }
     }
     @{ download = @{ uri = "https://dl.k8s.io/v${kubernetesVersion}/bin/windows/amd64/kubelet.exe"; file = "kubelet-${kubernetesVersion}.exe"; targetDir = "${kubernetesPath}/kubelet.exe" } }
-    @{ download = @{ uri = "https://dl.k8s.io/v${kubernetesVersion}/bin/windows/amd64/kubeadm.exe"; file = "kubeadm-${kubernetesVersion}.exe.exe"; targetDir = "${kubernetesPath}/kubeadm.exe" } }
+    @{ download = @{ uri = "https://dl.k8s.io/v${kubernetesVersion}/bin/windows/amd64/kubeadm.exe"; file = "kubeadm-${kubernetesVersion}.exe"; targetDir = "${kubernetesPath}/kubeadm.exe" } }
     @{ download = @{ uri = "https://github.com/rancher/wins/releases/download/v${rancherWinsVersion}/wins.exe"; file = "wins-${rancherWinsVersion}.exe"; targetDir = "${kubernetesPath}/wins.exe" } }
-    @{ download = @{ uri = "https://k8stestinfrabinaries.blob.core.windows.net/nssm-mirror/nssm-${nssmVersion}.zip"; file = "nssm-${nssmVersion}.zip"; targetDir = $nssmInstallDirectory } }
     @{ download = @{ uri = 'https://raw.githubusercontent.com/RipcordSoftware/hvk8scluster/main/src/cluster/windows/install-kubelet-service.ps1'; file = 'install-kubelet-service.ps1'; downloadDir = $PSScriptRoot } }
     @{ download = @{ uri = 'https://raw.githubusercontent.com/RipcordSoftware/hvk8scluster/main/src/cluster/windows/install-docker-host-network-service.ps1'; file = 'install-docker-host-network-service.ps1'; downloadDir = $PSScriptRoot } }
     @{ download = @{ uri = 'https://raw.githubusercontent.com/RipcordSoftware/hvk8scluster/main/src/cluster/windows/nssm.ps1'; file = 'nssm.ps1'; downloadDir = $PSScriptRoot } }

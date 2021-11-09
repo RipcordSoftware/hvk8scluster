@@ -2,12 +2,23 @@
 
 param (
     [Parameter(Mandatory)][string] $command,
-    [Parameter(ValueFromRemainingArguments=$true)][string[]] $arguments
+    [Parameter(ValueFromRemainingArguments=$true)][string[]] $arguments,
+    [switch] $disableNssmInstall
 )
 
 $ErrorActionPreference = 'Stop'
 
-[string] $nssmPath = "${PSScriptRoot}\..\bin\nssm-2.24-101-g897c7ad\win64\nssm.exe"
+[string] $nssmMajorVersion = '2.24'
+[string] $nssmMinorVersion = '101-g897c7ad'
+[string] $nssmPath = "${PSScriptRoot}\..\bin\nssm-${nssmMajorVersion}-${nssmMinorVersion}\win64\nssm.exe"
+
+# install Nssm to Program Files
+if (!$disableNssmInstall -and !(Test-Path $nssmPath)) {
+    [string] $nssmInstallDir = "${env:ProgramFiles}\nssm-${nssmMajorVersion}"
+    New-Item -Path $nssmInstallDir -ItemType Directory
+    Copy-Item -Path $nssmPath -Destination $nssmInstallDir
+    $nssmPath = "${nssmInstallDir}\nssm.exe"
+}
 
 [string] $powershell = "${env:SystemRoot}\System32\WindowsPowerShell\v1.0\powershell.exe"
 [string] $powershellCorePath = "${env:SystemDrive}\Program Files\PowerShell\7\pwsh.exe"

@@ -16,7 +16,7 @@ if (!$global:rs) {
     }
 
     class Nssm {
-        static [string] $nssmExePath = "${env:ProgramFiles}\nssm-2.24\win64\nssm.exe"
+        static [string] $nssmExePath = "${env:ProgramFiles}\nssm-2.24\nssm.exe"
         static [string[]] $defaultScriptArgs = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Unrestricted', '-OutputFormat', 'Text')
 
         static [bool] Exists([string] $name) {
