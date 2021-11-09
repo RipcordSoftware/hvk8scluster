@@ -11,10 +11,10 @@ $ErrorActionPreference = 'Stop'
 [string] $nssmMajorVersion = '2.24'
 [string] $nssmMinorVersion = '101-g897c7ad'
 [string] $nssmPath = "${PSScriptRoot}\..\bin\nssm-${nssmMajorVersion}-${nssmMinorVersion}\win64\nssm.exe"
+[string] $nssmInstallDir = "${env:ProgramFiles}\nssm-${nssmMajorVersion}"
 
 # install Nssm to Program Files
-if (!$disableNssmInstall -and !(Test-Path $nssmPath)) {
-    [string] $nssmInstallDir = "${env:ProgramFiles}\nssm-${nssmMajorVersion}"
+if (!$disableNssmInstall -and !(Test-Path $nssmInstallDir)) {
     New-Item -Path $nssmInstallDir -ItemType Directory
     Copy-Item -Path $nssmPath -Destination $nssmInstallDir
     $nssmPath = "${nssmInstallDir}\nssm.exe"
