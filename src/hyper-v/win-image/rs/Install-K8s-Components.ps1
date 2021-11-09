@@ -1,22 +1,11 @@
 #Requires -RunAsAdministrator
 
 param (
-    [string] $k8sVersion = '1.22.2',
-    [int] $interval = 10
+    [string] $k8sVersion = '1.22.2'
 )
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-
-# wait for docker to start
-[bool] $running = $false
-while (!$running) {
-    [object] $service = Get-Service -Name 'docker' -ErrorAction Ignore
-    $running = $service -and ($service.Status -eq 'Running')
-    if (!$running) {
-        Start-Sleep -Seconds $interval
-    }
-}
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
