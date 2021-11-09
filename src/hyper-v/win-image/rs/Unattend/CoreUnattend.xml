@@ -152,28 +152,28 @@
                     <Order>1</Order>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
-                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-OpenSSH.ps1 \rs\id_rsa.pub -startService</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Unattend\Install-OpenSSH.ps1 \rs\id_rsa.pub -startService</Path>
                     <Order>499</Order>
                     <Description>Install OpenSSH Server</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>400</Order>
-                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-PowerShellCore.ps1</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Unattend\Install-PowerShellCore.ps1</Path>
                     <Description>Install Powershell Core</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>401</Order>
-                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-Git.ps1</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Unattend\Install-Git.ps1</Path>
                     <Description>Install Git</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>410</Order>
-                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-Docker.ps1 -reboot</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Unattend\Install-Docker.ps1 -reboot</Path>
                     <Description>Install Docker</Description>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>420</Order>
-                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Install-K8s-Components.ps1</Path>
+                    <Path>powershell.exe -File \rs\Nssm\AddScript.ps1 \rs\Unattend\Install-K8s-Components.ps1</Path>
                     <Description>Install basic K8s components</Description>
                 </RunSynchronousCommand>
             </RunSynchronous>

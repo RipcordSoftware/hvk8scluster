@@ -57,7 +57,7 @@ if [ $? -ne 0 ]; then
     exit 8
 fi
 
-cp -f CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
+cp -f Unattend/CoreUnattend.xml "${ISOFILES_TMP_ROOT}/autounattend.xml"
 
 mkdir -p "${ISOFILES_TMP_ROOT}"'/rs/'
 cp -fr ./rs/ "${ISOFILES_TMP_ROOT}"
