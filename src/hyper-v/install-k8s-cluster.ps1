@@ -51,8 +51,9 @@ if (($nodeCount + $winNodeCount) -gt 0) {
     $cluster += $nodeIndexes | ForEach-Object {
         [int] $nodeIndex = $_ - 1
         [object] $node = $global:rs.Config::Vm.Nodes[$nodeIndex]
-        [string] $nodeTemplate = if ($node.nodeType -eq $global:rs.ClusterNodeType::Linux ) { $vmTemplateName } else { $winVmTemplateName }
-        @{ vmName = $node.Name; hostname = $node.Name; ip = $node.Ip; node = $true; memoryMB = $nodeMemoryMB; nodeType = $node.nodeType; nodeTemplate = $nodeTemplate }
+        [bool] $isWindows = $node.nodeType -eq $global:rs.ClusterNodeType::Windows
+        [string] $nodeTemplate = if (!$isWindows) { $vmTemplateName } else { $winVmTemplateName }
+        @{ vmName = $node.Name; hostname = $node.Name; ip = $node.Ip; node = $true; memoryMB = $nodeMemoryMB; nodeType = $node.nodeType; nodeTemplate = $nodeTemplate; isWindows = $isWindows }
     }
 }
 
@@ -127,8 +128,7 @@ if (!$skipVmProvisioning) {
             }, @{ ip = $ip })
 
             $global:rs.BackgroundProcess::SpinWait("Discovered '${vmName}' on '${ip}'", { param ($vm, $ip)
-                [bool] $nodeIsWindows = $vm.nodeType -eq $global:rs.ClusterNodeType::Windows
-                $global:rs.Cluster::SetHostName($ip, $vm.hostname, $sshUser, $sshPrivateKeyPath, $nodeIsWindows)
+                $global:rs.Cluster::SetHostName($ip, $vm.hostname, $sshUser, $sshPrivateKeyPath, $vm.isWindows)
             }, @{ vm = $vm; ip = $ip })
         }
     }
@@ -169,8 +169,7 @@ $cluster | Where-Object { $_.node } | ForEach-Object {
     }, @{ vm = $vm })
 
     $global:rs.BackgroundProcess::SpinWait("Node '$($vm.hostname)' is requesting to join the cluster...", { param ($vm, $joinCommand)
-        [bool] $nodeIsWindows = $vm.nodeType -eq $global:rs.ClusterNodeType::Windows
-        $global:rs.Cluster::Join($vm.ip, $joinCommand, $sshUser, $sshPrivateKeyPath, $nodeIsWindows)
+        $global:rs.Cluster::Join($vm.ip, $joinCommand, $sshUser, $sshPrivateKeyPath, $vm.isWindows)
     }, @{ vm = $vm; joinCommand = $joinCommand })
 }
 
