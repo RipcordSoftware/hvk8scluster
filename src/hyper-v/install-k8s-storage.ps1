@@ -42,8 +42,8 @@ $global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
 
 # check the DHCP server is available
 $global:rs.BackgroundProcess::SpinWait("Checking the DHCP server is available...", {
-    [object] $dhcpServer = $global:rs.Vm::GetVM($rs.Config::Vm.Dhcp.Name)
-    if (!$dhcpServer -or !$global:rs.Ssh::TestSsh($rs.Config::Vm.Dhcp.Ip)) {
+    [object] $dhcpServer = $global:rs.Vm::GetVM($global:rs.Config::Vm.Dhcp.Name)
+    if (!$dhcpServer -or !$global:rs.Ssh::TestSsh($global:rs.Config::Vm.Dhcp.Ip)) {
         Write-Error "Unable to find the DHCP/DNS server, is it running?"
     }
 })
