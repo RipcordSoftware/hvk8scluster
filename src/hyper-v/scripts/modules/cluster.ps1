@@ -92,9 +92,7 @@ if (!$global:rs) {
                 } else {
                     "if (`$env:COMPUTERNAME -ne '${hostName}') { " +
                         "Rename-Computer '${hostName}'; " +
-                        '[object] $t = [TimeSpan]::new(0, 0, 10); ' +
-                        'Set-NetIPAddress -InterfaceAlias Ethernet -PreferredLifetime $t -ValidLifetime $t; ' +
-                        'Restart-Computer -Force; ' +
+                        'Start-Service ipconfig-release-restart; ' +
                     "}"
                 }
 
