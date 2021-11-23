@@ -8,11 +8,11 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. ./scripts/config.ps1
-. ./scripts/ssh.ps1
-. ./scripts/vm.ps1
-. ./scripts/k8s.ps1
-. ./scripts/backgroundprocess.ps1
+. "${PSScriptRoot}/scripts/hvk8s/config.ps1"
+. "${PSScriptRoot}/scripts/modules/ssh.ps1"
+. "${PSScriptRoot}/scripts/modules/vm.ps1"
+. "${PSScriptRoot}/scripts/modules/k8s.ps1"
+. "${PSScriptRoot}/scripts/modules/backgroundprocess.ps1"
 
 if (!$global:rs.Vm::IsInstalled()) {
     Write-Error "Hyper-V is not installed or the service isn't running, please install manually or using the provided scripts"
@@ -42,8 +42,8 @@ $global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
 
 # check the DHCP server is available
 $global:rs.BackgroundProcess::SpinWait("Checking the DHCP server is available...", {
-    [object] $dhcpServer = $global:rs.Vm::GetVM($rs.Config::Vm.Dhcp.Name)
-    if (!$dhcpServer -or !$global:rs.Ssh::TestSsh($rs.Config::Vm.Dhcp.Ip)) {
+    [object] $dhcpServer = $global:rs.Vm::GetVM($global:rs.Config::Vm.Dhcp.Name)
+    if (!$dhcpServer -or !$global:rs.Ssh::TestSsh($global:rs.Config::Vm.Dhcp.Ip)) {
         Write-Error "Unable to find the DHCP/DNS server, is it running?"
     }
 })

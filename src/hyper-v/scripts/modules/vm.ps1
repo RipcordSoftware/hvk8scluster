@@ -1,10 +1,10 @@
 $ErrorActionPreference = "Stop"
 
-. "${PSScriptRoot}/config.ps1"
 . "${PSScriptRoot}/k8s.ps1"
 
 if (!$global:rs) {
     $global:rs = @{}
+    $global:rs.__modules = @()
 }
 
 &{
@@ -147,18 +147,29 @@ if (!$global:rs) {
             }
         }
 
-        static [object] Export([string] $vmName, [bool] $remove) {
-            [string] $exportPath = "$($global:rs.Config::ExportDir)/${vmName}"
+        static [void] EjectIsoMedia([string] $vmName) {
+            [object] $controller = Get-VMScsiController -VMName $vmName
+            if ($controller) {
+                $controller.Drives |
+                    Where-Object { $_.DvdMediaType } |
+                    ForEach-Object {
+                        Set-VMDvdDrive -VMName $vmName -ControllerNumber $_.ControllerNumber -ControllerLocation $_.ControllerLocation -Path $null
+                    }
+            }
+        }
+
+        static [object] Export([string] $vmName, [string] $exportDir, [bool] $remove) {
+            [string] $exportPath = "${exportDir}/${vmName}"
             if ($remove -and (Test-Path -Path $exportPath)) {
                 Remove-Item -Path $exportPath -Recurse -Force -ErrorAction SilentlyContinue
             }
 
             # export the VM to the template path
-            return Export-Vm -Name $vmName -Path $global:rs.Config::ExportDir -Passthru
+            return Export-Vm -Name $vmName -Path $exportDir -Passthru
         }
 
-        static [object] Import([string] $source, [string] $dest) {
-            [string] $sourceVmcxPath = [Vm]::GetExportedVmConfigPath($source)
+        static [object] Import([string] $exportDir, [string] $source, [string] $dest) {
+            [string] $sourceVmcxPath = [Vm]::GetExportedVmConfigPath($exportDir, $source)
             if (!$sourceVmcxPath) {
                 Write-Error "Unable to find a vmcx file for the exported VM '${source}'"
             }
@@ -172,13 +183,13 @@ if (!$global:rs) {
             return $vm
         }
 
-        static [string] GetExportedVmConfigPath([string] $vmName) {
-            [string] $path = [Vm]::GetExportedVmDir($vmName)
+        static [string] GetExportedVmConfigPath([string] $exportDir, [string] $vmName) {
+            [string] $path = [Vm]::GetExportedVmDir($exportDir, $vmName)
             return Get-ChildItem -Path $path -Include "*.vmcx" -Recurse | Select-Object -First 1
         }
 
-        static [string] GetExportedVmDir([string] $vmName) {
-            return "$($global:rs.Config::ExportDir)/${vmName}"
+        static [string] GetExportedVmDir([string] $exportDir, [string] $vmName) {
+            return "${exportDir}/${vmName}"
         }
 
         static [bool] IsAdministrator() {
@@ -193,4 +204,8 @@ if (!$global:rs) {
     }
 
     $global:rs.Vm = &{ return [Vm] }
+
+    if ($global:rs.__modules -notcontains $PSCommandPath) {
+        $global:rs.__modules += $PSCommandPath
+    }
 }

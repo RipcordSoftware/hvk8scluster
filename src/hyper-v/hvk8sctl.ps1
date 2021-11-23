@@ -7,10 +7,10 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-. ./scripts/ssh.ps1
-. ./scripts/config.ps1
-. ./scripts/cluster.ps1
-. ./scripts/arguments.ps1
+. "${PSScriptRoot}/scripts/modules/ssh.ps1"
+. "${PSScriptRoot}/scripts/hvk8s/config.ps1"
+. "${PSScriptRoot}/scripts/modules/cluster.ps1"
+. "${PSScriptRoot}/scripts/modules/arguments.ps1"
 
 if (!$sshPrivateKeyPath) {
     $sshPrivateKeyPath = $global:rs.Ssh::DiscoverPrivateKeyPath($global:rs.Config::RepoRoot)
