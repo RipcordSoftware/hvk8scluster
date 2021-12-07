@@ -54,9 +54,11 @@ $nodeVms | Where-Object {
         [object] $vm = $_
         $global:rs.BackgroundProcess::SpinWait("Adding a storage disk to '$($vm.Name)'...", { param ($vm)
             [string] $storageDiskPath = $global:rs.Vm::GetVhdPath($vm.Name, "storage")
-            [uint64] $vmStorageDiskSize = $vmStorageDiskSizeGB * $global:rs.K8s::Memory.Gi
-            New-VHD -Path $storageDiskPath -Dynamic -SizeBytes $vmStorageDiskSize | Out-Null
-            Add-VMHardDiskDrive -VMName $vm.Name -Path $storageDiskPath
+            if (!(Test-Path $storageDiskPath)) {
+                [uint64] $vmStorageDiskSize = $vmStorageDiskSizeGB * $global:rs.K8s::Memory.Gi
+                New-VHD -Path $storageDiskPath -Dynamic -SizeBytes $vmStorageDiskSize | Out-Null
+                Add-VMHardDiskDrive -VMName $vm.Name -Path $storageDiskPath
+            }
         }, @{ vm = $vm })
     }
 
