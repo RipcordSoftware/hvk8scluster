@@ -20,6 +20,9 @@ $ErrorActionPreference = "Stop"
 [object] $scriptArgs = @{}
 $MyInvocation.MyCommand.Parameters.Keys |
     Where-Object { [System.Management.Automation.PSCmdlet]::CommonParameters -notcontains $_ } |
+    Where-Object { $_ -ne 'vmMemoryMB' } |
     ForEach-Object { $scriptArgs[$_] = (Get-Variable -Name $_).Value } | Out-Null
+
+$scriptArgs.vmMemory = @{ dynamic = $false; startupMB = $vmMemoryMB; minMB = $vmMemoryMB; maxMB = $vmMemoryMB } | ConvertTo-Json -Compress
 
 &"${PSScriptRoot}/scripts/hvk8s/build-k8s-vm-template.ps1" @scriptArgs -isoPath $isoPath

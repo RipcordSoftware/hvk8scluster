@@ -1,7 +1,7 @@
 param (
     [string] $vmName = "hvk8s-template",
     [int] $vmCpuCount = 2,
-    [int] $vmMemoryMB = 768,
+    [object] $vmMemory = @{ dynamic = $false; startupMB = 256; minMB = 256; maxMB = 256 },
     [int] $vmDiskSizeGB = 40,
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
@@ -22,6 +22,11 @@ $ErrorActionPreference = "Stop"
 # give the background processes access to the app args
 $global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
 
+# optionally convert vmMemory from JSON
+if ($vmMemory -is [string]) {
+    $vmMemory = $vmMemory | ConvertFrom-Json
+}
+
 if (!$skipVmProvisioning) {
     # check the preseed image is available
     if (!(Test-Path $isoPath)) {
@@ -37,9 +42,9 @@ if (!$skipVmProvisioning) {
     })
 
     # create the VM
-    $global:rs.BackgroundProcess::SpinWait("Creating the virtual machine...", { param ($isoPath)
-        $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $false) | Out-Null
-    }, @{ isoPath = $isoPath })
+    $global:rs.BackgroundProcess::SpinWait("Creating the virtual machine...", { param ($isoPath, $vmMemory)
+        $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemory, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $false) | Out-Null
+    }, @{ isoPath = $isoPath; vmMemory = $vmMemory })
 
     # wait for the VM to come up
     [string] $ip = $global:rs.BackgroundProcess::SpinWait("Waiting for VM IP address for '${vmName}'...", {
