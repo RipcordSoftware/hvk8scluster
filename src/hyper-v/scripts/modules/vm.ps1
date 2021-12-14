@@ -16,7 +16,7 @@ if (!$global:rs) {
             [string] $vmName,
             [string] $isoPath,
             [int] $vmCpuCount = 2,
-            [int] $vmMemoryMB = 256,
+            [object] $vmMemory = @{ dynamic = $false; startupMB = 256; minMB = 256; maxMB = 256 },
             [int] $vmDiskSizeGB = 4,
             [string] $vmSwitch = "Kubernetes",
             [bool] $removeVhd,
@@ -39,7 +39,9 @@ if (!$global:rs) {
             }
 
             [bool] $createdVm = $false
-            [int64] $vmMemory = $vmMemoryMB * $global:rs.K8s::Memory.Mi
+            [int64] $startupMemory = $vmMemory.startupMB * $global:rs.K8s::Memory.Mi
+            [int64] $minMemory = $vmMemory.minMB * $global:rs.K8s::Memory.Mi
+            [int64] $maxMemory = $vmMemory.maxMB * $global:rs.K8s::Memory.Mi
             [int64] $vmDiskSize = $vmDiskSizeGB * $global:rs.K8s::Memory.Gi
 
             if (!$vm) {
@@ -52,8 +54,16 @@ if (!$global:rs) {
 
             if ($createdVm) {
                 try {
-                    Set-VM -Name $vmName -MemoryStartupBytes $vmMemory -AutomaticStartAction Start -AutomaticStartDelay 30 `
-                        -ProcessorCount $vmCpuCount -StaticMemory -CheckpointType Disabled
+                    Set-VM -Name $vmName -AutomaticStartAction Start -AutomaticStartDelay 30 `
+                        -ProcessorCount $vmCpuCount -CheckpointType Disabled
+
+                    if ($vmMemory.dynamic) {
+                        Set-VM -Name $vmName -DynamicMemory -MemoryStartupBytes $startupMemory `
+                            -MemoryMinimumBytes $minMemory -MemoryMaximumBytes $maxMemory
+                    } else {
+                        [int64] $memory = (@($startupMemory, $minMemory, $maxMemory) | Measure-Object -Maximum).Maximum
+                        Set-VM -Name $vmName -StaticMemory -MemoryStartupBytes $memory
+                    }
 
                     [object] $scsi = Get-VMScsiController -VMName $vmName
                     [object] $dvdDrive = Add-VMDvdDrive -VMDriveController $scsi -Path $isoPath -Passthru
@@ -81,9 +91,13 @@ if (!$global:rs) {
             if ($vmCpu.Count -ne $vmCpuCount) {
                 $changes.ProcessorCount = $vmCpuCount
             }
-            if ($vmMemoryBytes -gt $vmMemory.Startup) {
+
+            if ($vmMemory.DynamicMemoryEnabled -and $vmMemoryBytes -gt $vmMemory.Maximum) {
+                $changes.MemoryMaximumBytes = $vmMemoryBytes
+            } elseif (!$vmMemory.DynamicMemoryEnabled -and $vmMemoryBytes -gt $vmMemory.Startup) {
                 $changes.MemoryStartupBytes = $vmMemoryBytes
             }
+
             if ($changes.Count -gt 0) {
                 Set-VM -Name $vmName @changes
             }
