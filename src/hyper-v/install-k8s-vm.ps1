@@ -2,13 +2,13 @@ param (
     [string] $vmName = "hvk8s-unknown",
     [string] $vmIp,
     [int] $vmCpuCount = 2,
-    [int] $vmMemoryMB = 1024,
+    [Parameter(Mandatory)][object] $vmMemory,
     [int] $vmDiskSizeGB = 40,
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
     [switch] $updateVm,
-    [string] $debianVersion = "10.8.0"
+    [string] $debianVersion = "10.11.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,7 +22,12 @@ if (!(Test-Path $isoPath)) {
     Write-Error "The ISO image '$isoPath' is missing, please build it before proceeding"
 }
 
-[bool] $created = $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMinMemoryMB, $vmMaxMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
+# optionally convert vmMemory from JSON
+if ($vmMemory -is [string]) {
+    $vmMemory = $vmMemory | ConvertFrom-Json
+}
+
+[bool] $created = $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemory, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
 
 # if we created a new VM then remove any old host keys
 if ($created -and $vmIp) {

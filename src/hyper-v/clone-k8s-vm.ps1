@@ -3,7 +3,7 @@ param (
     [string] $vmName = "hvk8s-unknown",
     [string] $vmIp,
     [int] $vmCpuCount = 2,
-    [int] $vmMemoryMB = 1024,
+    [Parameter(Mandatory)][object] $vmMemory,
     [switch] $removeVhd,
     [switch] $removeVm,
     [switch] $updateVm
@@ -14,6 +14,11 @@ $ErrorActionPreference = "Stop"
 . "${PSScriptRoot}/scripts/modules/vm.ps1"
 . "${PSScriptRoot}/scripts/modules/ssh.ps1"
 . "${PSScriptRoot}/scripts/hvk8s/config.ps1"
+
+# optionally convert vmMemory from JSON
+if ($vmMemory -is [string]) {
+    $vmMemory = $vmMemory | ConvertFrom-Json
+}
 
 [object] $vm = $global:rs.Vm::GetVm($vmName)
 
@@ -40,7 +45,7 @@ if (!$vm) {
 
 # update the CPU cores and memory
 Write-Host "Updating the cloned VM..."
-$global:rs.Vm::Update($vmName, $vmCpuCount, $vmMemoryMB)
+$global:rs.Vm::Update($vmName, $vmCpuCount, $vmMemory)
 
 if ($createdVm) {
     # remove any old host keys

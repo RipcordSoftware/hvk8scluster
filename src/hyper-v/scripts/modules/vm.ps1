@@ -81,21 +81,29 @@ if (!$global:rs) {
             return $createdVm
         }
 
-        static [void] Update([string] $vmName, [int] $vmCpuCount, [int] $vmMemoryMB) {
-            [int64] $vmMemoryBytes = $vmMemoryMB * $global:rs.K8s::Memory.Mi
+        static [void] Update([string] $vmName, [int] $vmCpuCount, [object] $memory) {
+            [int64] $minBytes = $memory.minMB * $global:rs.K8s::Memory.Mi
+            [int64] $startupBytes = $memory.startupMB * $global:rs.K8s::Memory.Mi
+            [int64] $maxBytes = $memory.maxMB * $global:rs.K8s::Memory.Mi
 
-            [object] $vmMemory = Get-VMMemory -VMName $vmName
             [object] $vmCpu = Get-VMProcessor -VMName $vmName
-
             [object] $changes = @{}
             if ($vmCpu.Count -ne $vmCpuCount) {
                 $changes.ProcessorCount = $vmCpuCount
             }
 
-            if ($vmMemory.DynamicMemoryEnabled -and $vmMemoryBytes -gt $vmMemory.Maximum) {
-                $changes.MemoryMaximumBytes = $vmMemoryBytes
-            } elseif (!$vmMemory.DynamicMemoryEnabled -and $vmMemoryBytes -gt $vmMemory.Startup) {
-                $changes.MemoryStartupBytes = $vmMemoryBytes
+            [object] $vmMemory = Get-VMMemory -VMName $vmName
+            if ($memory.dynamic -ne $vmMemory.DynamicMemoryEnabled) {
+                $changes.DynamicMemoryEnabled = $memory.dynamic
+            }
+            if ($maxBytes -ne $vmMemory.Maximum) {
+                $changes.MemoryMaximumBytes = $maxBytes
+            }
+            if ($minBytes -ne $vmMemory.Minimum) {
+                $changes.MemoryMinimumBytes = $minBytes
+            }
+            if ($startupBytes -ne $vmMemory.Startup) {
+                $changes.MemoryStartupBytes = $startupBytes
             }
 
             if ($changes.Count -gt 0) {

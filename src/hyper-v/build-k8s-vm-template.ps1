@@ -1,14 +1,14 @@
 param (
     [string] $vmName = "hvk8s-template",
     [int] $vmCpuCount = 2,
-    [int] $vmMemoryMB = 768,
+    [int] $vmMemoryMB = 1024,
     [int] $vmDiskSizeGB = 40,
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
     [switch] $skipVmProvisioning,
     [switch] $removeVmTemplate,
-    [string] $debianVersion = "10.8.0"
+    [string] $debianVersion = "10.11.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,6 +23,6 @@ $MyInvocation.MyCommand.Parameters.Keys |
     Where-Object { $_ -ne 'vmMemoryMB' } |
     ForEach-Object { $scriptArgs[$_] = (Get-Variable -Name $_).Value } | Out-Null
 
-$scriptArgs.vmMemory = @{ dynamic = $false; startupMB = $vmMemoryMB; minMB = $vmMemoryMB; maxMB = $vmMemoryMB } | ConvertTo-Json -Compress
+$scriptArgs.vmMemory = $global:rs.Config::Memory.Template.Linux.Calculate($vmMemoryMB) | ConvertTo-Json -Compress
 
 &"${PSScriptRoot}/scripts/hvk8s/build-k8s-vm-template.ps1" @scriptArgs -isoPath $isoPath

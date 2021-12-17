@@ -8,9 +8,7 @@ param (
     [switch] $removeVm,
     [switch] $skipVmProvisioning,
     [switch] $removeVmTemplate,
-    [string] $winVersion = '20h2_updated_march_2021_x64_dvd_0ccc98b9',
-    [int] $vmMemoryMinMB = 256,
-    [int] $vmMemoryStartupMB = 1024
+    [string] $winVersion = '20h2_updated_march_2021_x64_dvd_0ccc98b9'
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,11 +23,6 @@ $MyInvocation.MyCommand.Parameters.Keys |
     Where-Object { $_ -ne 'vmMemoryMB' } |
     ForEach-Object { $scriptArgs[$_] = (Get-Variable -Name $_).Value } | Out-Null
 
-$scriptArgs.vmMemory = @{
-    dynamic = $true
-    startupMB = $vmMemoryStartupMB
-    minMB = $vmMemoryMinMB
-    maxMB = [Math]::Max($vmMemoryMB, $vmMemoryStartupMB)
-} | ConvertTo-Json -Compress
+$scriptArgs.vmMemory = $global:rs.Config::Memory.Template.Windows.Calculate($vmMemoryMB) | ConvertTo-Json -Compress
 
 &"${PSScriptRoot}/scripts/hvk8s/build-k8s-vm-template.ps1" @scriptArgs -isoPath $isoPath
