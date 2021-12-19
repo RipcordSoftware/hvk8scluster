@@ -5,7 +5,7 @@ set -o pipefail
 set -o nounset
 # set -o xtrace
 
-CHART_VERSION=1.7.9
+CHART_VERSION=1.8.1
 
 helm repo add rook-release https://charts.rook.io/release
 
@@ -56,6 +56,16 @@ cephClusterSpec:
     enabled: false
   crashCollector:
     disable: true
+  placement:
+    all:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+              - linux
 EOF
 
 helm upgrade -i \
