@@ -2,13 +2,13 @@ param (
     [string] $vmName = "hvk8s-dhcp-dns",
     [string] $vmIp = "172.31.0.2",
     [int] $vmCpuCount = 2,
-    [int64] $vmMemoryMB = 768,
+    [int64] $vmMemoryMB = 1024,
     [int64] $vmDiskSizeGB = 4,
     [string] $vmSwitch = "Kubernetes",
     [switch] $removeVhd,
     [switch] $removeVm,
     [switch] $updateVm,
-    [string] $debianVersion = "10.8.0"
+    [string] $debianVersion = "10.11.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,9 +34,11 @@ if (!(Test-Path $isoPath)) {
 # give the background processes access to the app args
 $global:rs.BackgroundProcess::SetInitialVars($MyInvocation)
 
-[bool] $created = [bool]$global:rs.BackgroundProcess::SpinWait("Creating the virtual machine...", { param ($isoPath)
-    return $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemoryMB, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
-}, @{ isoPath = $isoPath })
+[object] $vmMemory = $global:rs.Config::Memory.Dhcp.Calculate($vmMemoryMB)
+
+[bool] $created = [bool]$global:rs.BackgroundProcess::SpinWait("Creating the virtual machine...", { param ($isoPath, $vmMemory)
+    return $global:rs.Vm::Create($vmName, $isoPath, $vmCpuCount, $vmMemory, $vmDiskSizeGB, $vmSwitch, $removeVhd, $removeVm, $updateVm)
+}, @{ isoPath = $isoPath; vmMemory = $vmMemory })
 
 if ($created) {
     # if we created a new VM then remove any old host keys

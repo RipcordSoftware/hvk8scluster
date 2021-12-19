@@ -2,7 +2,7 @@ param (
     [int] $nodeCount = 3,
     [int] $winNodeCount = 0,
     [int] $nodeMemoryMB = 4096,
-    [int] $masterMemoryMB = 2048,
+    [int] $masterMemoryMB = 3072,
     [string] $vmTemplateName = 'hvk8s-template',
     [string] $winVmTemplateName = 'hvk8s-win-template',
     [string] $sshUser = "hvk8s",
@@ -39,7 +39,8 @@ if (!$sshPrivateKeyPath) {
 
 # define the cluster
 [object] $master = @{
-    vmName = "hvk8s-master"; hostname = "hvk8s-master"; ip = $global:rs.Config::Vm.Master.Ip; node = $false; memoryMB = $masterMemoryMB;
+    vmName = "hvk8s-master"; hostname = "hvk8s-master"; ip = $global:rs.Config::Vm.Master.Ip; node = $false;
+    memory = $global:rs.Config::Vm.Master.Memory.Calculate($masterMemoryMB);
     nodeType = $global:rs.ClusterNodeType::Linux; nodeTemplate = $vmTemplateName
 }
 [object] $cluster = @( $master )
@@ -53,7 +54,11 @@ if (($nodeCount + $winNodeCount) -gt 0) {
         [object] $node = $global:rs.Config::Vm.Nodes[$nodeIndex]
         [bool] $isWindows = $node.nodeType -eq $global:rs.ClusterNodeType::Windows
         [string] $nodeTemplate = if (!$isWindows) { $vmTemplateName } else { $winVmTemplateName }
-        @{ vmName = $node.Name; hostname = $node.Name; ip = $node.Ip; node = $true; memoryMB = $nodeMemoryMB; nodeType = $node.nodeType; nodeTemplate = $nodeTemplate; isWindows = $isWindows }
+        @{
+            vmName = $node.Name; hostname = $node.Name; ip = $node.Ip; node = $true; nodeType = $node.nodeType;
+            memory = $node.Memory.Calculate($nodeMemoryMB);
+            nodeTemplate = $nodeTemplate; isWindows = $isWindows
+        }
     }
 }
 
@@ -92,19 +97,20 @@ $global:rs.BackgroundProcess::SpinWait("Resetting the DHCP server...", {
 if (!$skipVmProvisioning) {
     $cluster | ForEach-Object {
         [object] $vm = $_
+        [string] $vmMemory = $vm.memory | ConvertTo-Json -Compress
         [string] $vmName = $vm.vmName
         if (!$disableVmTemplate) {
-            $global:rs.BackgroundProcess::SpinWait("Cloning '$($vm.nodeTemplate)' to '${vmName}'...", { param ($vm)
+            $global:rs.BackgroundProcess::SpinWait("Cloning '$($vm.nodeTemplate)' to '${vmName}'...", { param ($vm, $vmMemory)
                 .\clone-k8s-vm.ps1 `
-                    -vmTemplateName $vm.nodeTemplate -vmName $vm.vmName -vmIp $vm.ip -vmMemoryMB $vm.memoryMB `
+                    -vmTemplateName $vm.nodeTemplate -vmName $vm.vmName -vmIp $vm.ip -vmMemory $vmMemory `
                     -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
-            }, @{ vm = $vm })
+            }, @{ vm = $vm; vmMemory = $vmMemory })
         } else {
-            $global:rs.BackgroundProcess::SpinWait("Creating '${vmName}'...", { param ($vm)
+            $global:rs.BackgroundProcess::SpinWait("Creating '${vmName}'...", { param ($vm, $vmMemory)
                 .\install-k8s-vm.ps1 `
-                    -vmName $vm.vmName -vmIp $vm.ip -vmMemoryMB $vm.memoryMB `
+                    -vmName $vm.vmName -vmIp $vm.ip -vmMemory $vmMemory `
                     -removeVhd:$removeVhd -removeVm:$removeVm -updateVm:$updateVm
-            }, @{ vm = $vm })
+            }, @{ vm = $vm; vmMemory = $vmMemory })
         }
     }
 
