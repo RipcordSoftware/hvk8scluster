@@ -57,7 +57,7 @@ if (!$global:rs) {
             }
             Dhcp = [VmMemory]::new($true, 64, 640, 1024)
             Master = [VmMemory]::new($true, 2048, 2048, 3072)
-            Node = [VmMemory]::new($true, 256, 512, 4096)
+            Node = [VmMemory]::new($true, 1024, 1536, 4096)
         }
 
         static [object] $Vm = @{

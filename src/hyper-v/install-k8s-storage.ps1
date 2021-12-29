@@ -50,24 +50,21 @@ $global:rs.BackgroundProcess::SpinWait("Checking the DHCP server is available...
 
 $nodeVms | Where-Object {
         $_.HardDrives.Count -lt 2
+    } | Where-Object {
+        [object] $vm = $_
+        $global:rs.Config::Vm.Nodes | Where-Object { $_.Name -eq $vm.Name } | Where-Object { $_.NodeType -eq $global:rs.ClusterNodeType::Linux }
     } | ForEach-Object {
         [object] $vm = $_
         $global:rs.BackgroundProcess::SpinWait("Adding a storage disk to '$($vm.Name)'...", { param ($vm)
             [string] $storageDiskPath = $global:rs.Vm::GetVhdPath($vm.Name, "storage")
-            [uint64] $vmStorageDiskSize = $vmStorageDiskSizeGB * $global:rs.K8s::Memory.Gi
-            New-VHD -Path $storageDiskPath -Dynamic -SizeBytes $vmStorageDiskSize | Out-Null
-            Add-VMHardDiskDrive -VMName $vm.Name -Path $storageDiskPath
+            if (!(Test-Path $storageDiskPath)) {
+                [uint64] $vmStorageDiskSize = $vmStorageDiskSizeGB * $global:rs.K8s::Memory.Gi
+                New-VHD -Path $storageDiskPath -Dynamic -SizeBytes $vmStorageDiskSize | Out-Null
+                Add-VMHardDiskDrive -VMName $vm.Name -Path $storageDiskPath
+            }
         }, @{ vm = $vm })
     }
 
 $global:rs.BackgroundProcess::SpinWait("Asking Helm to install rook-ceph...", {
     $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "./remote-commands/install-rook-ceph-chart.sh", $sshUser, $sshPrivateKeyPath)
-})
-
-$global:rs.BackgroundProcess::SpinWait("Asking kubectl to initialize the cluster and storage class...", {
-    $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "./remote-commands/install-rook-ceph-cluster.sh", $sshUser, $sshPrivateKeyPath)
-})
-
-$global:rs.BackgroundProcess::SpinWait("Asking kubectl to initialize the ceph toolbox...", {
-    $global:rs.Ssh::InvokeRemoteCommand($global:rs.Config::Vm.Master.Ip, "./remote-commands/install-rook-ceph-toolbox.sh", $sshUser, $sshPrivateKeyPath)
 })
