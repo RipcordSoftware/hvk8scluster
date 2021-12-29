@@ -3,7 +3,7 @@
 # requires:
 # - a valid ~/.kube/config file
 # - a running cluster with MetalLB
-# - a running cluster with Rook/Ceph (for rook-ceph-block)
+# - a running cluster with Rook/Ceph (for ceph-block)
 # - helm.exe
 # - kubectl.exe (to recover the password)
 
@@ -21,7 +21,8 @@ if (!$?) {
 
 # values: https://github.com/bitnami/charts/blob/master/bitnami/postgresql/values.yaml
 helm upgrade -i `
-    --set global.storageClass=rook-ceph-block `
+    --set global.storageClass=ceph-block `
     --set service.type=LoadBalancer `
-    --version 10.3.7 `
+    --set primary.nodeSelector.kubernetes\.io\/os=linux `
+    --version 10.14.0 `
     hvk8s-postgresql bitnami/postgresql

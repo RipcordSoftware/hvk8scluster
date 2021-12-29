@@ -31,7 +31,8 @@ helm upgrade -i `
     --set service.type=ClusterIP `
     --set ingress.annotations.kubernetes\.io/ingress\.class=nginx `
     --set ingress.tls="" `
-    www-hvk8s-com-apache bitnami/apache --version 8.3.0 --wait
+    --set nodeSelector.kubernetes\.io\/os=linux `
+    www-hvk8s-com-apache bitnami/apache --version 8.11.1 --wait
 if (!$?) {
     Write-Error "Failed to install the apache chart"
 }
