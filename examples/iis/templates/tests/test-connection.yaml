@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "iis.fullname" . }}-test-connection"
+  labels:
+    {{- include "iis.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "iis.fullname" . }}:{{ .Values.service.port }}']
+  nodeSelector:
+    "kubernetes.io/os": linux
+  restartPolicy: Never
