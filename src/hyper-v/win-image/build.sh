@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # set the Windows ISO name
-WIN_ISO=${2:-en_windows_server_version_20h2_updated_march_2021_x64_dvd_0ccc98b9.iso}
+WIN_ISO=${1:-en_windows_server_version_20h2_updated_march_2021_x64_dvd_0ccc98b9.iso}
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 PUBKEY_FILE="${REPO_ROOT}/src/keys/id_rsa.pub"
@@ -20,6 +20,11 @@ if [ ! -f "$PUBKEY_FILE" ]; then
         echo "Error: unable to find the public key file"
         exit 2
     fi
+fi
+
+if [ ! -f "$WIN_ISO" ]; then
+    echo "Error: unable to find the Windows ISO file '${WIN_ISO}'"
+    exit 3
 fi
 
 if [ -d "$ISOFILES_TMP_ROOT" ]; then
